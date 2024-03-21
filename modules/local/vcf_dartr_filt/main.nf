@@ -1,6 +1,7 @@
 process FILTER_VCF {
-    tag "filtering_vcf"
+    tag "$vcf.baseName"
     label 'process_single'
+    errorStrategy 'ignore'
 
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -16,10 +17,10 @@ process FILTER_VCF {
     val usepopinfo
 
     output:
-    path '*.str'       , emit: csv
-    path '*.treemix.gz', optional: true, emit: treemix
-    path '*.vcf'       , emit: vcf
-    path "versions.yml", emit: versions
+    path '*.str'        , emit: str
+    path '*.treemix.gz' , optional: true, emit: treemix
+    path '*.vcf'        , emit: vcf
+    path "versions.yml" , emit: versions
 
     when:
     task.ext.when == null || task.ext.when

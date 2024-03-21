@@ -1,0 +1,10 @@
+
+VCFtools - v0.1.13
+(C) Adam Auton and Anthony Marcketta 2009
+
+Parameters as interpreted:
+	--vcf test/biallelic_filtered.vcf
+
+After filtering, kept 180 out of 180 Individuals
+After filtering, kept 7537 out of a possible 7537 Sites
+Run Time = 0.00 seconds

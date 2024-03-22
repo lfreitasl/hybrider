@@ -1,11 +1,13 @@
 #!/usr/bin/env nextflow
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    nf-core/hybrider
+    {{ name }}
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Github : https://github.com/nf-core/hybrider
-    Website: https://nf-co.re/hybrider
-    Slack  : https://nfcore.slack.com/channels/hybrider
+    Github : https://github.com/{{ name }}
+{%- if branded %}
+    Website: https://nf-co.re/{{ short_name }}
+    Slack  : https://nfcore.slack.com/channels/{{ short_name }}
+{%- endif %}
 ----------------------------------------------------------------------------------------
 */
 
@@ -13,66 +15,83 @@ nextflow.enable.dsl = 2
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    GENOME PARAMETER VALUES
+    IMPORT FUNCTIONS / MODULES / SUBWORKFLOWS / WORKFLOWS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-// TODO nf-core: Remove this line if you don't need a FASTA file
-//   This is an example of how to use getGenomeAttribute() to fetch parameters
-//   from igenomes.config using `--genome`
-params.fasta = WorkflowMain.getGenomeAttribute(params, 'fasta')
+include { HYBRIDER                } from './workflows/hybrider'
+include { PIPELINE_INITIALISATION } from './subworkflows/local/utils_lfreitasl_hybrider_pipeline/main'
+include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_lfreitasl_hybrider_pipeline/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    VALIDATE & PRINT PARAMETER SUMMARY
+    NAMED WORKFLOWS FOR PIPELINE
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { validateParameters; paramsHelp } from 'plugin/nf-validation'
+//
+// WORKFLOW: Run main analysis pipeline depending on type of input
+//
+workflow LFREITASL_HYBRIDER {
 
-// Print help message if needed
-if (params.help) {
-    def logo = NfcoreTemplate.logo(workflow, params.monochrome_logs)
-    def citation = '\n' + WorkflowMain.citation(workflow) + '\n'
-    def String command = "nextflow run ${workflow.manifest.name} --input samplesheet.csv --genome GRCh37 -profile docker"
-    log.info logo + paramsHelp(command) + citation + NfcoreTemplate.dashedLine(params.monochrome_logs)
-    System.exit(0)
+    take:
+    samplesheet // channel: samplesheet read in from --input
+
+    main:
+
+    //
+    // WORKFLOW: Run pipeline
+    //
+    HYBRIDER (
+        samplesheet
+    )
+
+    emit:
+    multiqc_report = HYBRIDER.out.multiqc_report // channel: /path/to/multiqc_report.html
+
 }
-
-// Validate input parameters
-if (params.validate_params) {
-    validateParameters()
-}
-
-WorkflowMain.initialise(workflow, params, log)
-
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    NAMED WORKFLOW FOR PIPELINE
+    RUN MAIN WORKFLOW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { HYBRIDER } from './workflows/hybrider'
-
-//
-// WORKFLOW: Run main nf-core/hybrider analysis pipeline
-//
-workflow NFCORE_HYBRIDER {
-    HYBRIDER ()
-}
-
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    RUN ALL WORKFLOWS
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
-
-//
-// WORKFLOW: Execute a single named workflow for the pipeline
-// See: https://github.com/nf-core/rnaseq/issues/619
-//
 workflow {
-    NFCORE_HYBRIDER ()
+
+    main:
+
+    //
+    // SUBWORKFLOW: Run initialisation tasks
+    //
+    PIPELINE_INITIALISATION (
+        params.version,
+        params.help,
+        params.validate_params,
+        params.monochrome_logs,
+        args,
+        params.outdir,
+        params.input
+    )
+
+    //
+    // WORKFLOW: Run main workflow
+    //
+    LFREITASL_HYBRIDER (
+        PIPELINE_INITIALISATION.out.samplesheet
+    )
+
+    //
+    // SUBWORKFLOW: Run completion tasks
+    //
+    PIPELINE_COMPLETION (
+        params.email,
+        params.email_on_fail,
+        params.plaintext_email,
+        params.outdir,
+        params.monochrome_logs,
+        params.hook_url,
+        LFREITASL_HYBRIDER.out.multiqc_report
+    )
 }
 
 /*

@@ -5,7 +5,7 @@
 include { FILTER_VCF } from '../../modules/local/vcf_dartr_filt/main'
 include { META_VCF   } from '../../modules/local/meta_filt_vcf/main'
 
-workflow TEST_CONVERTER {
+workflow FILT_CONVERTER {
     take:
     vcf // file: /path/to/samplesheet.csv
     meta
@@ -20,7 +20,7 @@ workflow TEST_CONVERTER {
     ch_vcf_meta = Channel.empty()
     ch_versions = Channel.empty()
 
-    FILTER_VCF(Channel.fromPath(vcf),meta,locmiss,indmiss,maf,usepopinfo)
+    FILTER_VCF(vcf,meta,locmiss,indmiss,maf,usepopinfo)
     ch_str = ch_str.mix(FILTER_VCF.out.str.ifEmpty([]))
     ch_vcf = ch_vcf.mix(FILTER_VCF.out.vcf.ifEmpty([]))
     ch_versions = ch_versions.mix(FILTER_VCF.out.versions.first().ifEmpty(null))

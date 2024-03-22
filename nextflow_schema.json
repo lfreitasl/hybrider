@@ -20,7 +20,8 @@
                     "pattern": "^\\S+\\.csv$",
                     "description": "Path to comma-separated file containing information about the samples in the experiment.",
                     "help_text": "You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row. See [usage docs](https://nf-co.re/hybrider/usage#samplesheet-input).",
-                    "fa_icon": "fas fa-file-csv"
+                    "fa_icon": "fas fa-file-csv",
+                    "default": "/data/home/lucas.freitas/nextflow_modules/nf-core-hybrider/test/*.vcf"
                 },
                 "outdir": {
                     "type": "string",
@@ -266,6 +267,38 @@
                     "help_text": "Allows string values that are parseable as numbers or booleans. For further information see [JSONSchema docs](https://github.com/everit-org/json-schema#lenient-mode)."
                 }
             }
+        },
+        "dartr_module_for_filtering": {
+            "title": "DartR module for filtering",
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "meta": {
+                    "type": "string",
+                    "default": "/data/home/lucas.freitas/nextflow_modules/nf-core-hybrider/test/Metadata_SecondAssembly_f.txt",
+                    "description": "Samplesheet with sample metadata. It is necessary at least a columns with name \"samples\" indicating the name os samples, another optional column is \"POP\" column with information from sample location, it is used to generate treemix outputs if \"popinfo == true\""
+                },
+                "locmiss": {
+                    "type": "number",
+                    "default": 0.7,
+                    "description": "Threshold for filtering loci based on missing data across samples"
+                },
+                "indmiss": {
+                    "type": "number",
+                    "default": 0.3,
+                    "description": "Threshold for filtering individuals based on missing loci."
+                },
+                "maf": {
+                    "type": "number",
+                    "default": 0.05,
+                    "description": "Threshold for filtering loci based on minor allele  frequency"
+                },
+                "popinfo": {
+                    "type": "boolean",
+                    "description": "Whether use or not population information"
+                }
+            }
         }
     },
     "allOf": [
@@ -283,6 +316,9 @@
         },
         {
             "$ref": "#/definitions/generic_options"
+        },
+        {
+            "$ref": "#/definitions/dartr_module_for_filtering"
         }
     ]
 }

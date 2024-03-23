@@ -1,5 +1,5 @@
 process STRUCTURE {
-    tag "Running_Structure"
+    tag "$meta.id"
     label 'process_single'
 
     conda "${moduleDir}/environment.yml"
@@ -8,15 +8,13 @@ process STRUCTURE {
         'docker.io/lfreitasl/structure-threader:latest' }"
 
     input:
-    path str
+    tuple val(meta), path(str)
     val noadmix 
     val freqscorr
     val inferalpha
     val alpha
     val inferlambda
     val lambda
-    val numinds
-    val numloci
     val ploidy
     val maxpops
     val burnin
@@ -34,7 +32,7 @@ process STRUCTURE {
 
     script: // This script is bundled with the pipeline, in nf-core/hybrider/bin/
     def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${str.baseName}"
+    def prefix = task.ext.prefix ?: "${meta.id}"
     def ifnoadmix = noadmix : '1' ? '0'
     def iffreqscorr = freqscorr : '1' ? '0'
     def ifinferalpha = inferalpha : '1' ? '0'
@@ -50,8 +48,8 @@ process STRUCTURE {
 
     sed -i 's/#define BURNIN[[:space:]]*[0-9]*\(\.[0-9]\+\)\{0,1\}/#define BURNIN $burnin/' /mainparams
     sed -i 's/#define NUMREPS[[:space:]]*[0-9]*\(\.[0-9]\+\)\{0,1\}/#define NUMREPS $mcmc/' /mainparams
-    sed -i 's/#define NUMINDS[[:space:]]*[0-9]*\(\.[0-9]\+\)\{0,1\}/#define NUMINDS $numinds/' /mainparams
-    sed -i 's/#define NUMLOCI[[:space:]]*[0-9]*\(\.[0-9]\+\)\{0,1\}/#define NUMLOCI $numloci/' /mainparams
+    sed -i 's/#define NUMINDS[[:space:]]*[0-9]*\(\.[0-9]\+\)\{0,1\}/#define NUMINDS $meta.n_inds/' /mainparams
+    sed -i 's/#define NUMLOCI[[:space:]]*[0-9]*\(\.[0-9]\+\)\{0,1\}/#define NUMLOCI $meta.n_loc/' /mainparams
 
 
 

@@ -39,9 +39,12 @@ workflow HYBRIDER {
         params.maf,
         params.popinfo,
     )
-   // ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]})
+   
+    //FILT_CONVERTER.out.ch_vcf_meta.view()
+   
     ch_versions = ch_versions.mix(FILT_CONVERTER.out.versions.first())
 
+    //FILT_CONVERTER.out.ch_vcf_meta
     //
     // Collate and save software versions
     //

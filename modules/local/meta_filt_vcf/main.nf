@@ -10,10 +10,11 @@ process META_VCF {
 
     input:
     path vcf
+    path str
 
     output:
-    path 'vcfs_info.csv', emit: vcf_meta
-    path "versions.yml" , emit: versions
+    tuple path('vcfs_info.csv'), path(str), emit: vcf_meta
+    path "versions.yml"                   , emit: versions
 
     when:
     task.ext.when == null || task.ext.when

@@ -1,6 +1,6 @@
 process STRUCTURE {
     tag "$meta.id"
-    label 'process_single'
+    label 'process_high'
 
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -8,7 +8,7 @@ process STRUCTURE {
         'docker.io/lfreitasl/structure-threader:latest' }"
 
     input:
-    tuple val(meta), path(str)
+    tuple val(meta), path(str), val(k_value), val(rep_per_k)
     val noadmix 
     val freqscorr
     val inferalpha
@@ -16,16 +16,14 @@ process STRUCTURE {
     val inferlambda
     val lambda
     val ploidy
-    val maxpops
     val burnin
     val mcmc
-    val rep_per_k
 
 
     output:
-    path '*_f'         , optional: true, emit: ffiles
-    path '*_q'         , optional: true, emit: qfiles
-    path "versions.yml", emit: versions
+    tuple val(meta), path('*_f')         , emit: ffiles
+    tuple val(meta), path('*_q')         , emit: qfiles
+    path "versions.yml"                  , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -33,34 +31,36 @@ process STRUCTURE {
     script: // This script is bundled with the pipeline, in nf-core/hybrider/bin/
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def ifnoadmix = noadmix : '1' ? '0'
-    def iffreqscorr = freqscorr : '1' ? '0'
-    def ifinferalpha = inferalpha : '1' ? '0'
-    def ifinferlambda = inferlambda : '1' ? '0'
+    def ifnoadmix = noadmix ? '1' : '0'
+    def iffreqscorr = freqscorr ? '1' : '0'
+    def ifinferalpha = inferalpha ? '1' : '0'
+    def ifinferlambda = inferlambda ? '1' : '0'
 
     """
-    sed -i 's/#define NOADMIX[[:space:]]*[0-9]/#define NOADMIX $ifnoadmix/' /extraparams
-    sed -i 's/#define FREQSCORR[[:space:]]*[0-9]/#define FREQSCORR $iffreqscorr/' /extraparams
-    sed -i 's/#define INFERALPHA[[:space:]]*[0-9]/#define INFERALPHA $ifinferalpha/' /extraparams
-    sed -E -i 's/#define ALPHA[[:space:]]*[0-9]+\.[0-9]+/#define ALPHA $alpha/' /extraparams
-    sed -i 's/#define INFERLAMBDA[[:space:]]*[0-9]/#define INFERLAMBDA $ifinferlambda/' /extraparams
-    sed -E -i 's/#define LAMBDA[[:space:]]*[0-9]+\.[0-9]+/#define LAMBDA $lambda/' /extraparams
-
-    sed -i 's/#define BURNIN[[:space:]]*[0-9]*\(\.[0-9]\+\)\{0,1\}/#define BURNIN $burnin/' /mainparams
-    sed -i 's/#define NUMREPS[[:space:]]*[0-9]*\(\.[0-9]\+\)\{0,1\}/#define NUMREPS $mcmc/' /mainparams
-    sed -i 's/#define NUMINDS[[:space:]]*[0-9]*\(\.[0-9]\+\)\{0,1\}/#define NUMINDS $meta.n_inds/' /mainparams
-    sed -i 's/#define NUMLOCI[[:space:]]*[0-9]*\(\.[0-9]\+\)\{0,1\}/#define NUMLOCI $meta.n_loc/' /mainparams
-
-
+    sed -i 's/#define NOADMIX[[:space:]]*[0-9]/#define NOADMIX ${ifnoadmix} /' /extraparams
+    sed -i 's/#define FREQSCORR[[:space:]]*[0-9]/#define FREQSCORR ${iffreqscorr} /' /extraparams
+    sed -i 's/#define INFERALPHA[[:space:]]*[0-9]/#define INFERALPHA ${ifinferalpha} /' /extraparams
+    sed -E -i 's/#define ALPHA[[:space:]]*[0-9]+\.[0-9]+/#define ALPHA ${alpha} /' /extraparams
+    sed -i 's/#define INFERLAMBDA[[:space:]]*[0-9]/#define INFERLAMBDA ${ifinferlambda}/' /extraparams 
+    sed -E -i 's/#define LAMBDA[[:space:]]*[0-9]+\.[0-9]+/#define LAMBDA ${lambda} /' /extraparams
+    sed -i 's/#define BURNIN[[:space:]]*[0-9]*\(\.[0-9]\+\)\{0,1\}/#define BURNIN ${burnin} /' /mainparams
+    sed -i 's/#define NUMREPS[[:space:]]*[0-9]*\(\.[0-9]\+\)\{0,1\}/#define NUMREPS ${mcmc} /' /mainparams
+    sed -i 's/#define NUMINDS[[:space:]]*[0-9]*\(\.[0-9]\+\)\{0,1\}/#define NUMINDS ${meta.n_inds} /' /mainparams
+    sed -i 's/#define NUMLOCI[[:space:]]*[0-9]*\(\.[0-9]\+\)\{0,1\}/#define NUMLOCI ${meta.n_loc} /' /mainparams
 
     structure_threader run \\
-        -Klist \\
-        -R $rep_per_k \\
+        -Klist $k_value \\
+        -R 1 \\
         -i $str\\
         -o ./ \\
         --params /mainparams \\
         -t $task.cpus \\
         -st /bin/structure \\
+        --no_tests true \\
+        --no_plots true
+
+    mv *rep_1_f str_K${k_value}_rep${rep_per_k}_f
+    mv *rep_1_q str_K${k_value}_rep${rep_per_k}_q 
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

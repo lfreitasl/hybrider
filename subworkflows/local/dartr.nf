@@ -38,8 +38,6 @@ workflow FILT_CONVERTER {
     }
     .set { ch_vcf_meta }
 
-    ch_vcf_meta.view()
-
     emit:
     str      = ch_str                                 // channel: [ val(meta), [ reads ] ]
     vcf      = ch_vcf

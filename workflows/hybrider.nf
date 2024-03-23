@@ -11,12 +11,14 @@ include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pi
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_lfreitasl_hybrider_pipeline'
 include { FILT_CONVERTER         } from '../subworkflows/local/dartr.nf'
+include { RUN_STRUCTURE          } from '../subworkflows/local/structure.nf'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
+
 
 workflow HYBRIDER {
 
@@ -27,6 +29,7 @@ workflow HYBRIDER {
 
     ch_versions = Channel.empty()
     ch_multiqc_files = Channel.empty()
+    ch_str_in = Channel.empty()
 
     //
     // MODULE: Run FastQC
@@ -39,12 +42,27 @@ workflow HYBRIDER {
         params.maf,
         params.popinfo,
     )
-   
-    //FILT_CONVERTER.out.ch_vcf_meta.view()
-   
+
+    ch_str_in = ch_str_in.mix(FILT_CONVERTER.out.str_meta)
     ch_versions = ch_versions.mix(FILT_CONVERTER.out.versions.first())
 
-    //FILT_CONVERTER.out.ch_vcf_meta
+    RUN_STRUCTURE(
+        ch_str_in,
+        params.noadmix,
+        params.freqscorr,
+        params.inferalpha,
+        params.alpha,
+        params.inferlambda,
+        params.lambda,
+        params.ploidy,
+        params.burnin,
+        params.mcmc,
+        params.rep_per_k,
+        params.k_value
+    )
+
+    ch_versions = ch_versions.mix(RUN_STRUCTURE.out.versions.first())
+
     //
     // Collate and save software versions
     //

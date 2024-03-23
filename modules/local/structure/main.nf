@@ -37,23 +37,25 @@ process STRUCTURE {
     def ifinferlambda = inferlambda ? '1' : '0'
 
     """
-    sed -i 's/#define NOADMIX[[:space:]]*[0-9]/#define NOADMIX ${ifnoadmix} /' /extraparams
-    sed -i 's/#define FREQSCORR[[:space:]]*[0-9]/#define FREQSCORR ${iffreqscorr} /' /extraparams
-    sed -i 's/#define INFERALPHA[[:space:]]*[0-9]/#define INFERALPHA ${ifinferalpha} /' /extraparams
-    sed -E -i 's/#define ALPHA[[:space:]]*[0-9]+\.[0-9]+/#define ALPHA ${alpha} /' /extraparams
-    sed -i 's/#define INFERLAMBDA[[:space:]]*[0-9]/#define INFERLAMBDA ${ifinferlambda}/' /extraparams 
-    sed -E -i 's/#define LAMBDA[[:space:]]*[0-9]+\.[0-9]+/#define LAMBDA ${lambda} /' /extraparams
-    sed -i 's/#define BURNIN[[:space:]]*[0-9]*\(\.[0-9]\+\)\{0,1\}/#define BURNIN ${burnin} /' /mainparams
-    sed -i 's/#define NUMREPS[[:space:]]*[0-9]*\(\.[0-9]\+\)\{0,1\}/#define NUMREPS ${mcmc} /' /mainparams
-    sed -i 's/#define NUMINDS[[:space:]]*[0-9]*\(\.[0-9]\+\)\{0,1\}/#define NUMINDS ${meta.n_inds} /' /mainparams
-    sed -i 's/#define NUMLOCI[[:space:]]*[0-9]*\(\.[0-9]\+\)\{0,1\}/#define NUMLOCI ${meta.n_loc} /' /mainparams
+    cat /tmp/extraparams > ./extraparams
+    cat /tmp/mainparams > ./mainparams
+    sed -i 's/#define NOADMIX[[:space:]]*[0-9]/#define NOADMIX ${ifnoadmix} /' ./extraparams
+    sed -i 's/#define FREQSCORR[[:space:]]*[0-9]/#define FREQSCORR ${iffreqscorr} /' ./extraparams
+    sed -i 's/#define INFERALPHA[[:space:]]*[0-9]/#define INFERALPHA ${ifinferalpha} /' ./extraparams
+    sed -E -i 's/#define ALPHA[[:space:]]*[0-9]+\\.[0-9]+/#define ALPHA ${alpha} /' ./extraparams
+    sed -i 's/#define INFERLAMBDA[[:space:]]*[0-9]/#define INFERLAMBDA ${ifinferlambda}/' ./extraparams 
+    sed -E -i 's/#define LAMBDA[[:space:]]*[0-9]+\\.[0-9]+/#define LAMBDA ${lambda} /' ./extraparams
+    sed -i 's/#define BURNIN[[:space:]]*[0-9]*\\(\\.[0-9]\\+\\)\\{0,1\\}/#define BURNIN ${burnin} /' ./mainparams
+    sed -i 's/#define NUMREPS[[:space:]]*[0-9]*\\(\\.[0-9]\\+\\)\\{0,1\\}/#define NUMREPS ${mcmc} /' ./mainparams
+    sed -i 's/#define NUMINDS[[:space:]]*[0-9]*\\(\\.[0-9]\\+\\)\\{0,1\\}/#define NUMINDS ${meta.n_inds} /' ./mainparams
+    sed -i 's/#define NUMLOCI[[:space:]]*[0-9]*\\(\\.[0-9]\\+\\)\\{0,1\\}/#define NUMLOCI ${meta.n_loc} /' ./mainparams
 
     structure_threader run \\
         -Klist $k_value \\
         -R 1 \\
         -i $str\\
         -o ./ \\
-        --params /mainparams \\
+        --params ./mainparams \\
         -t $task.cpus \\
         -st /bin/structure \\
         --no_tests true \\
@@ -64,7 +66,7 @@ process STRUCTURE {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        structure: \$(echo \$(structure --version 2>&1) | grep 'Version' | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+'
+        structure: \$(echo \$(structure --version 2>&1) | grep 'Version' | grep -o '[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+'
     END_VERSIONS
     """
 }

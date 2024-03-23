@@ -319,10 +319,6 @@
             "type": "integer",
             "default": 2000
         },
-        "MCMC": {
-            "type": "integer",
-            "default": 20000
-        },
         "rep_per_k": {
             "type": "integer",
             "default": 2
@@ -330,6 +326,10 @@
         "k_value": {
             "type": "integer",
             "default": 1
+        },
+        "mcmc": {
+            "type": "integer",
+            "default": 20000
         }
     }
 }

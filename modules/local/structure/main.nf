@@ -35,8 +35,8 @@ process STRUCTURE {
     def iffreqscorr = freqscorr ? '1' : '0'
     def ifinferalpha = inferalpha ? '1' : '0'
     def ifinferlambda = inferlambda ? '1' : '0'
-    def rename_f = rep_per_k > 1 ? "mv *rep1_f ${str.baseName}_str_K${k_value}_rep${rep_per_k}_f" : ''
-    def rename_q = rep_per_k > 1 ? "mv *rep1_q ${str.baseName}_str_K${k_value}_rep${rep_per_k}_q" : '' 
+    def rename_f = rep_per_k ? "mv *rep1_f ${str.baseName}_str_K${k_value}_rep${rep_per_k}_f" : ''
+    def rename_q = rep_per_k ? "mv *rep1_q ${str.baseName}_str_K${k_value}_rep${rep_per_k}_q" : '' 
 
     """
     cat /tmp/extraparams > ./extraparams

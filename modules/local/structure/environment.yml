@@ -1,0 +1,7 @@
+name: structure-threader
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bioconda::structure=2.3.4

@@ -1,5 +1,5 @@
 process STRUCTURE {
-    tag "$meta.id"
+    tag "${meta.id}_K${k_value}_R${rep_per_k}"
     label 'process_high'
 
     conda "${moduleDir}/environment.yml"
@@ -21,8 +21,8 @@ process STRUCTURE {
 
 
     output:
-    tuple val(meta), path('*_f')         , emit: ffiles
-    tuple val(meta), path('*_q')         , emit: qfiles
+    tuple val(meta), path('*rep*_f')         , emit: ffiles
+    tuple val(meta), path('*rep*_q')         , emit: qfiles
     path "versions.yml"                  , emit: versions
 
     when:
@@ -35,6 +35,8 @@ process STRUCTURE {
     def iffreqscorr = freqscorr ? '1' : '0'
     def ifinferalpha = inferalpha ? '1' : '0'
     def ifinferlambda = inferlambda ? '1' : '0'
+    def rename_f = rep_per_k > 1 ? "mv *rep1_f ${str.baseName}_str_K${k_value}_rep${rep_per_k}_f" : ''
+    def rename_q = rep_per_k > 1 ? "mv *rep1_q ${str.baseName}_str_K${k_value}_rep${rep_per_k}_q" : '' 
 
     """
     cat /tmp/extraparams > ./extraparams
@@ -49,6 +51,7 @@ process STRUCTURE {
     sed -i 's/#define NUMREPS[[:space:]]*[0-9]*\\(\\.[0-9]\\+\\)\\{0,1\\}/#define NUMREPS ${mcmc} /' ./mainparams
     sed -i 's/#define NUMINDS[[:space:]]*[0-9]*\\(\\.[0-9]\\+\\)\\{0,1\\}/#define NUMINDS ${meta.n_inds} /' ./mainparams
     sed -i 's/#define NUMLOCI[[:space:]]*[0-9]*\\(\\.[0-9]\\+\\)\\{0,1\\}/#define NUMLOCI ${meta.n_loc} /' ./mainparams
+    sed -i 's/#define PLOIDY[[:space:]]*[0-9]*\\(\\.[0-9]\\+\\)\\{0,1\\}/#define PLOIDY ${ploidy} /' ./mainparams
 
     structure_threader run \\
         -Klist $k_value \\
@@ -61,12 +64,12 @@ process STRUCTURE {
         --no_tests true \\
         --no_plots true
 
-    mv *rep_1_f str_K${k_value}_rep${rep_per_k}_f
-    mv *rep_1_q str_K${k_value}_rep${rep_per_k}_q 
+    $rename_f
+    $rename_q 
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        structure: \$(echo \$(structure --version 2>&1) | grep 'Version' | grep -o '[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+'
+        structure: \$(echo \$(structure --version 2>&1 | grep 'Version' | grep -o '[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+'))
     END_VERSIONS
     """
 }

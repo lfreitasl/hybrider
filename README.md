@@ -66,9 +66,13 @@ IN4,river2
 
 > [!NOTE]
 > If the metadata file has more individuals than the ones present in each (or both) VCF files, it will retrieve only the information of the ones present in VCFs.
+>
 > POP information will be used for plotting STRUCTURE and ADMIXTURE graphs.
+>
 > If you choose to run Treemix, POP information will be used to set the input file of this tool.
+>
 > Individuals with no population information (e.g. Captive animals) can be represented in the metadata under the same POP label for plotting purposes.
+>
 > I do not recommend you to include unknown POP information samples in Treemix analysis.
 
 

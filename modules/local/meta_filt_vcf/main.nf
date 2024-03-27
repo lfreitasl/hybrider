@@ -1,5 +1,5 @@
 process META_VCF {
-    tag "Organizing metadata"
+    tag "$meta"
     label 'process_single'
     errorStrategy 'ignore'
 
@@ -9,7 +9,7 @@ process META_VCF {
         'docker.io/lfreitasl/dartr:latest' }"
 
     input:
-    path vcf
+    tuple val(meta), path(vcf)
     path str
 
     output:

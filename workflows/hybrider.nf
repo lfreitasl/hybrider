@@ -6,11 +6,12 @@
 
 include { FASTQC                 } from '../modules/nf-core/fastqc/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
+include { ADMIXTURE              } from '../modules/local/admixture/main'
 include { paramsSummaryMap       } from 'plugin/nf-validation'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_lfreitasl_hybrider_pipeline'
-include { FILT_CONVERTER         } from '../subworkflows/local/dartr.nf'
+include { FILT_CONVERTER         } from '../subworkflows/local/conversions'
 include { RUN_STRUCTURE          } from '../subworkflows/local/structure.nf'
 
 /*
@@ -27,9 +28,10 @@ workflow HYBRIDER {
 
     main:
 
-    ch_versions = Channel.empty()
+    ch_versions      = Channel.empty()
     ch_multiqc_files = Channel.empty()
-    ch_str_in = Channel.empty()
+    ch_str_in        = Channel.empty()
+    ch_admix_in      = Channel.empty()
 
     //
     // MODULE: Run FastQC
@@ -44,6 +46,7 @@ workflow HYBRIDER {
     )
 
     ch_str_in = ch_str_in.mix(FILT_CONVERTER.out.str_meta)
+    ch_admix_in = ch_admix_in.mix(FILT_CONVERTER.out.admix)
     ch_versions = ch_versions.mix(FILT_CONVERTER.out.versions.first())
 
     RUN_STRUCTURE(
@@ -62,6 +65,12 @@ workflow HYBRIDER {
     )
 
     ch_versions = ch_versions.mix(RUN_STRUCTURE.out.versions.first())
+
+    ch_kvalue = Channel.from(1..params.k_value)
+
+    ADMIXTURE(ch_admix_in, ch_kvalue)
+
+    ch_versions = ch_versions.mix(ADMIXTURE.out.versions.first())
 
     //
     // Collate and save software versions

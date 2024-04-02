@@ -330,6 +330,18 @@
         "mcmc": {
             "type": "integer",
             "default": 20000
+        },
+        "plot_admix": {
+            "type": "boolean",
+            "default": true
+        },
+        "plot_str": {
+            "type": "boolean",
+            "default": true
+        },
+        "writecsv": {
+            "type": "boolean",
+            "default": true
         }
     }
 }

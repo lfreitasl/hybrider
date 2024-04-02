@@ -8,15 +8,14 @@ process ADMIXTURE {
         'docker.io/lfreitasl/admixture' }"
 
     input:
-    tuple val(meta), path (bed_ped_geno), path(bim_map), path(fam)
-    val K
+    tuple val(meta), path(sampmeta), path (bed_ped_geno), path(bim_map), path(fam), val(K)
 
 
     output:
-    tuple val(meta), path("*.Q")        , emit: ancestry_fractions
-    tuple val(meta), path("*.P")        , emit: allele_frequencies
-    tuple val(meta), path("log*.out")   , optional: true, emit: cross_validation
-    path "versions.yml"                 , emit: versions
+    tuple val(meta), path(sampmeta), path("*.Q")        , emit: ancestry_fractions
+    tuple val(meta), path(sampmeta), path("*.P")        , emit: allele_frequencies
+    tuple val(meta), path(sampmeta), path("log*.out")   , optional: true, emit: cross_validation
+    path "versions.yml"                                 , emit: versions
 
     when:
     task.ext.when == null || task.ext.when

@@ -9,12 +9,12 @@ process META_VCF {
         'docker.io/lfreitasl/dartr:latest' }"
 
     input:
-    tuple val(meta), path(vcf)
-    path str
+    tuple val(meta), path(sampmeta), path(vcf)
+    path  str
 
     output:
-    tuple path('vcfs_info.csv'), path(str), emit: vcf_meta
-    path "versions.yml"                   , emit: versions
+    tuple path('vcfs_info.csv'), path(sampmeta), path(str), emit: vcf_meta
+    path "versions.yml"                                   , emit: versions
 
     when:
     task.ext.when == null || task.ext.when

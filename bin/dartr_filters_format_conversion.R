@@ -72,4 +72,6 @@ gl2plink(myg, plink_path = "/bin/", outfile = pref, bed_file = T, outpath = "./"
 system("sed -i 's/\\.1//g' *.bim")
 system("sed -i 's/NW_//g' *.bim")
 
+meta<-meta[meta$samples%in%myg$ind.names,]
+meta<-meta[match(myg$ind.names, meta$samples),]
 write.csv(meta, paste(pref,"sorted_meta.csv", sep="_"),row.names = F,quote = F)

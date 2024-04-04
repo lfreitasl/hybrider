@@ -7,6 +7,7 @@
 include { FASTQC                 } from '../modules/nf-core/fastqc/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
 include { ADMIXTURE              } from '../modules/local/admixture/main'
+include { PREPARE_ML             } from '../modules/local/prepare_ml/main'
 include { paramsSummaryMap       } from 'plugin/nf-validation'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
@@ -34,6 +35,8 @@ workflow HYBRIDER {
     ch_str_in        = Channel.empty()
     ch_admix_in      = Channel.empty()
     ch_kvalue        = Channel.empty()
+    ch_vcf           = Channel.empty()
+    ch_k2            = Channel.empty()
 
     //
     // MODULE: Run FastQC
@@ -47,8 +50,9 @@ workflow HYBRIDER {
         params.popinfo,
     )
 
-    ch_str_in = ch_str_in.mix(FILT_CONVERTER.out.str_meta)
+    ch_str_in   = ch_str_in.mix(FILT_CONVERTER.out.str_meta)
     ch_admix_in = ch_admix_in.mix(FILT_CONVERTER.out.admix)
+    ch_vcf      = ch_vcf.mix(FILT_CONVERTER.out.vcf)
     ch_versions = ch_versions.mix(FILT_CONVERTER.out.versions.first())
 
     RUN_STRUCTURE(
@@ -83,6 +87,27 @@ workflow HYBRIDER {
     ch_plotq_in=ch_ffiles.combine(ch_admix_test,by:0)
 
     PLOT_SELECTED(ch_plotq_in, params.writecsv, params.plot_str, params.plot_admix)
+
+    ch_k2       = ch_k2.mix(PLOT_SELECTED.out.meta)
+    ch_versions = ch_versions.mix(PLOT_SELECTED.out.versions.first())
+
+    
+
+    PREPARE_ML(
+        ch_vcf,
+        ch_k2,
+        params.inferbypop,
+        params.whichpop,
+        params.inferbyclust,
+        params.smaller,
+        params.method,
+        params.upper,
+        params.lower,
+        params.rminvariable,
+        params.dropna
+    )
+    
+    ch_versions = ch_versions.mix(PREPARE_ML.out.versions.first())
 
     //
     // Collate and save software versions

@@ -342,6 +342,40 @@
         "writecsv": {
             "type": "boolean",
             "default": true
+        },
+        "inferbypop": {
+            "type": "boolean"
+        },
+        "whichpop": {
+            "type": "string"
+        },
+        "inferbyclust": {
+            "type": "boolean",
+            "default": true
+        },
+        "smaller": {
+            "type": "boolean",
+            "default": true
+        },
+        "method": {
+            "type": "string",
+            "default": "mean"
+        },
+        "upper": {
+            "type": "number",
+            "default": 0.9
+        },
+        "lower": {
+            "type": "number",
+            "default": 0.1
+        },
+        "rminvariable": {
+            "type": "boolean",
+            "default": true
+        },
+        "dropna": {
+            "type": "boolean",
+            "default": true
         }
     }
 }

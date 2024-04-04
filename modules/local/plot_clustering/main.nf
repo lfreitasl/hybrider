@@ -17,7 +17,7 @@ process PLOT_CLUSTERING {
 
     output:
     tuple path('*.pdf'), path("*.svg")              , optional: true, emit: graphs
-    tuple val(meta), path("meta_str_admix_K*.csv")  , optional: true, emit: meta
+    tuple val(meta), path("meta_str_admix_K2.csv")  , optional: true, emit: meta
     path "versions.yml"                             , emit: versions
 
     when:
@@ -37,8 +37,8 @@ process PLOT_CLUSTERING {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         r-base: \$(echo \$(R --version 2>&1) | sed 's/^.*R version //; s/ .*\$//')
-        r-dartr: \$(Rscript -e "library(reshape2); cat(as.character(packageVersion('reshape2')))")
-        r-vcfr: \$(Rscript -e "library(pophelper); cat(as.character(packageVersion('pophelper')))")
+        r-reshape2: \$(Rscript -e "library(reshape2); cat(as.character(packageVersion('reshape2')))")
+        r-pophelper: \$(Rscript -e "library(pophelper); cat(as.character(packageVersion('pophelper')))")
     END_VERSIONS
     """
 }

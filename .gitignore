@@ -6,3 +6,4 @@ results/
 testing/
 testing*
 *.pyc
+falvlib_filt_20depth_gi.recode.vcf

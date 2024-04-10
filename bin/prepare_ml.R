@@ -242,4 +242,4 @@ if (dropna) {
 
 filename <- file_path_sans_ext(basename(vcfp))
 filename <- paste(filename, ".genotype.csv", sep = "")
-write.csv(final_matrix, filename, quote = FALSE, row.names= FALSE)
+write.csv(final_matrix, filename, quote = FALSE, row.names= TRUE)

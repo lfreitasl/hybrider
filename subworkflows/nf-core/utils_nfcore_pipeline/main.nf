@@ -159,11 +159,6 @@ def nfCoreLogo(monochrome_logs=true) {
     String.format(
         """\n
         ${dashedLine(monochrome_logs)}
-                                                ${colors.green},--.${colors.black}/${colors.green},-.${colors.reset}
-        ${colors.blue}        ___     __   __   __   ___     ${colors.green}/,-._.--~\'${colors.reset}
-        ${colors.blue}  |\\ | |__  __ /  ` /  \\ |__) |__         ${colors.yellow}}  {${colors.reset}
-        ${colors.blue}  | \\| |       \\__, \\__/ |  \\ |___     ${colors.green}\\`-._,-`-,${colors.reset}
-                                                ${colors.green}`._,._,\'${colors.reset}
         ${colors.purple}  ${workflow.manifest.name} ${getWorkflowVersion()}${colors.reset}
         ${dashedLine(monochrome_logs)}
         """.stripIndent()

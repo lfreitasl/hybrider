@@ -62,3 +62,16 @@ gl2vcf(myg, plink_path = "/bin/", outfile = prefix1, outpath = "./",snp_pos = "p
 prefix2<-paste("filt_", pref, ".vcf",sep="")
 system(paste0("sed -i 's/pop1_//g' ", prefix2)) #This will substitute only if the gl object has no pop factor (the default is pop1_)
 
+pedname<- paste(pref, ".ped", sep="")
+mapname<- paste(pref, ".map", sep="")
+file.rename(from='gl_plink_temp.ped', to=pedname)
+file.rename(from='gl_plink_temp.map', to=mapname)
+
+gl2plink(myg, plink_path = "/bin/", outfile = pref, bed_file = T, outpath = "./")
+
+system("sed -i 's/\\.1//g' *.bim")
+system("sed -i 's/NW_//g' *.bim")
+
+meta<-meta[meta$samples%in%myg$ind.names,]
+meta<-meta[match(myg$ind.names, meta$samples),]
+write.csv(meta, paste(pref,"sorted_meta.csv", sep="_"),row.names = F,quote = F)

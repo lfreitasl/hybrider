@@ -8,7 +8,7 @@ process STRUCTURE {
         'docker.io/lfreitasl/structure-threader:latest' }"
 
     input:
-    tuple val(meta), path(str), val(k_value), val(rep_per_k)
+    tuple val(meta), path(sampmeta), path(str), val(k_value), val(rep_per_k)
     val noadmix 
     val freqscorr
     val inferalpha
@@ -21,9 +21,9 @@ process STRUCTURE {
 
 
     output:
-    tuple val(meta), path('*rep*_f')         , emit: ffiles
-    tuple val(meta), path('*rep*_q')         , emit: qfiles
-    path "versions.yml"                  , emit: versions
+    tuple val("$str.baseName"), path(sampmeta), path('*rep*_f')         , emit: ffiles
+    tuple val("$str.baseName"), path(sampmeta), path('*rep*_q')         , emit: qfiles
+    path "versions.yml"                                      , emit: versions
 
     when:
     task.ext.when == null || task.ext.when

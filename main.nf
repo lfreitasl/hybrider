@@ -77,7 +77,7 @@ workflow {
     // WORKFLOW: Run main workflow
     //
     LFREITASL_HYBRIDER (
-        PIPELINE_INITIALISATION.out.samplesheet
+        PIPELINE_INITIALISATION.out.samplesheet_vcf
     )
 
     //

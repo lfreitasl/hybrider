@@ -36,6 +36,7 @@ workflow PIPELINE_INITIALISATION {
     nextflow_cli_args //   array: List of positional nextflow CLI args
     outdir            //  string: The output directory where the results will be saved
     input             //  string: Path to input samplesheet
+    reads             //  string: Path to rads samplesheet
 
     main:
 
@@ -78,11 +79,35 @@ workflow PIPELINE_INITIALISATION {
     //
     Channel
         .fromSamplesheet("input")
-        .set { ch_samplesheet }
+        .set { ch_vcfs }
+
+    //
+    // Create channel from input file provided through params.reads
+    //
+    Channel
+        .fromSamplesheet("reads")
+        .map {
+            meta, fastq_1, fastq_2 ->
+                if (!fastq_2) {
+                    return [ meta.id, meta + [ single_end:true ], [ fastq_1 ] ]
+                } else {
+                    return [ meta.id, meta + [ single_end:false ], [ fastq_1, fastq_2 ] ]
+                }
+        }
+        .groupTuple()
+        .map {
+            validateInputSamplesheet(it)
+        }
+        .map {
+            meta, fastqs ->
+                return [ meta, fastqs.flatten() ]
+        }
+        .set { ch_reads }
 
     emit:
-    samplesheet = ch_samplesheet
-    versions    = ch_versions
+    samplesheet_vcf   = ch_samplesheet
+    samplesheet_reads = ch_reads
+    versions          = ch_versions
 }
 
 /*

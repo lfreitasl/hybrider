@@ -1,0 +1,7 @@
+name: ipyrad
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - ipyrad=0.9.95

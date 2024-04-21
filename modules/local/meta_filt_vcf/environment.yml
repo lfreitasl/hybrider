@@ -1,4 +1,4 @@
-name: plot_clustering
+name: meta_vcf
 channels:
   - conda-forge
   - bioconda

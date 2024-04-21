@@ -15,7 +15,7 @@ process IPYRAD_INPUT {
     val overhang
 
     output:
-    path "params-${prefix}.txt"   , emit: params_file
+    tuple path("params-${prefix}.txt"), path(reads), path(reference)  , emit: params_file
     path "versions.yml"           , emit: versions
 
     when:

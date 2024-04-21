@@ -9,8 +9,9 @@ process IPYRAD_BRANCH_MINDEPTH {
 
     input:
     tuple val(mindepth), path(assembly)
-    path reads
+    path edits
     path reference
+    
 
     output:
     path "*.json"              , emit: assembly_object

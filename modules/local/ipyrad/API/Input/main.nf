@@ -22,8 +22,9 @@ process IPYRAD_INPUT {
     task.ext.when == null || task.ext.when
 
     script:
-    def args   = task.ext.args ?: reference ? "--reference_sequence ${reference}" : ''
+    def args   = task.ext.args ?: ''
     def prefix = tesk.ext.prefix ?: 'assembly'
+    def ref    = reference ? "--reference_sequence $reference" : ''
 
     """
     ipyrad_input.py \\
@@ -31,7 +32,8 @@ process IPYRAD_INPUT {
         --assembly_method $method \\
         --datatype $datatype \\
         --restriction_overhang $overhang \\
-        $args \\
+        $ref \\
+        $args
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

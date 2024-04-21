@@ -5,8 +5,8 @@ process FILTER_VCF {
 
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'docker://lfreitasl/dartr:latest':
-        'docker.io/lfreitasl/dartr:latest' }"
+        'https://depot.galaxyproject.org/singularity/mulled-v2-7cbdd89e4a230442dcff2455c5693faa81d0cda4:f36d68574b255379a8cabacc75a9ec9c783aff6e-0':
+        'biocontainers/mulled-v2-7cbdd89e4a230442dcff2455c5693faa81d0cda4:f36d68574b255379a8cabacc75a9ec9c783aff6e-0' }"
 
     input:
     path vcf

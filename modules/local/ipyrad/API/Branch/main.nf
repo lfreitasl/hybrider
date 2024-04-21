@@ -1,4 +1,4 @@
-process IPYRAD_BRANCH_MINDEPTH {
+process IPYRAD_BRANCH {
     tag "$prefix"
     label 'process_single'
 
@@ -8,7 +8,9 @@ process IPYRAD_BRANCH_MINDEPTH {
         'quay.io/biocontainers/ipyrad:0.9.95--pyh7cba7a3_0' }"
 
     input:
-    tuple val(mindepth), path(assembly)
+    path assembly
+    each mindepth
+    each minsamples
     path edits
     path reference
     
@@ -22,8 +24,11 @@ process IPYRAD_BRANCH_MINDEPTH {
     task.ext.when == null || task.ext.when
 
     script:
-    def args   = task.ext.args ?: reference ? "--reference_sequence $reference" : ''
-    def prefix = tesk.ext.prefix ?: "${assembly.baseName}_${mindepth}d"
+    def args   = task.ext.args ?: ''
+    def prefix = tesk.ext.prefix ?: mindepth && minsamples ? "${assembly.baseName}_${mindepth}d_${minsamples}samp" :
+                 mindepth && !minsamples ? "${assembly.baseName}_${mindepth}d" :
+                 !mindepth && minsamples ? "${assembly.baseName}_${minsamples}samp" : ''
+    def ref    = reference ? "--reference_sequence $reference" : ''
 
     """
     ipyrad_branching.py \\
@@ -31,6 +36,7 @@ process IPYRAD_BRANCH_MINDEPTH {
         --new_name $prefix \\
         --mindepth_statistical $mindepth \\
         --mindepth_majrule $mindepth \\
+        $ref \\
         $args
 
     cat <<-END_VERSIONS > versions.yml

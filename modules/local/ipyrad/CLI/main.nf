@@ -1,5 +1,5 @@
 process IPYRAD {
-    tag '$bam'
+    tag "$params_file"
     label 'process_high'
 
     conda "${moduleDir}/environment.yml"
@@ -36,7 +36,7 @@ process IPYRAD {
     ipyrad \\
         -p $params_file \\
         -c $task.cpus \\
-        $args \\
+        $args
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

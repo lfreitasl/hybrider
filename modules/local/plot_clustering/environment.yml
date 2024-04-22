@@ -4,6 +4,8 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - bioconda::r-pophelper=2.3.1
-  - bioconda::r-reshape2=1.4.4
+  - bioconda::r-dartr=2.9.7
+  - bioconda::r-vcfr=1.15.0
+  - r-pophelper=2.3.1
+  - r-reshape2=1.4.4
   - conda-forge::r-base=4.3.3

@@ -35,7 +35,8 @@ include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_lfreitasl_h
 workflow LFREITASL_HYBRIDER {
 
     take:
-    samplesheet // channel: samplesheet read in from --input
+    vcfs // channel: samplesheet read in from --input
+    reads
 
     main:
 
@@ -43,7 +44,8 @@ workflow LFREITASL_HYBRIDER {
     // WORKFLOW: Run pipeline
     //
     HYBRIDER (
-        samplesheet
+        vcfs,
+        reads
     )
 
     emit:
@@ -70,15 +72,26 @@ workflow {
         params.monochrome_logs,
         args,
         params.outdir,
-        params.input
+        params.vcfs,
+        params.reads
     )
 
     //
     // WORKFLOW: Run main workflow
     //
+    if (params.vcfs && params.downstream && !params.upstream){
     LFREITASL_HYBRIDER (
-        PIPELINE_INITIALISATION.out.samplesheet_vcf
+        PIPELINE_INITIALISATION.out.samplesheet_vcf,
+        []
     )
+    }
+
+    if (params.upstream && !params.downstream){
+        LFREITASL_HYBRIDER(
+            [],
+            PIPELINE_INITIALISATION.out.samplesheet_reads
+        )
+    }
 
     //
     // SUBWORKFLOW: Run completion tasks

@@ -5,7 +5,7 @@
 include { FASTQC as RAW_FASTQC  } from '../../modules/nf-core/fastqc/main'
 include { FASTQC as FILT_FASTQC } from '../../modules/nf-core/fastqc/main'
 include { FASTP                 } from '../../modules/nf-core/fastp/main'
-include { IPYRAD_INPUT          } from '../../modules/local/ipyrad/API/Branch/main'
+include { IPYRAD_INPUT          } from '../../modules/local/ipyrad/API/Input/main'
 include { IPYRAD as QC_STEPS    } from '../../modules/local/ipyrad/CLI/main'
 
 workflow QC {
@@ -45,13 +45,13 @@ workflow QC {
         FASTP.out.reads.collect{it[1]}.ifEmpty([]),
         params.reference,
         params.datatype,
-        params.method,
+        params.assembly_method,
         params.overhang
     )
 
     ch_versions     = ch_versions.mix(IPYRAD_INPUT.out.versions.first().ifEmpty(null))
     ch_params_file  = ch_params_file.mix(IPYRAD_INPUT.out.params)
-    
+
     // Running ipyrad QC steps
     QC_STEPS(
         ch_params_file,

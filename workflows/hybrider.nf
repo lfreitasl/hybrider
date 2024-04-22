@@ -15,6 +15,7 @@ include { methodsDescriptionText } from '../subworkflows/local/utils_lfreitasl_h
 include { FILT_CONVERTER         } from '../subworkflows/local/conversions'
 include { RUN_STRUCTURE          } from '../subworkflows/local/structure.nf'
 include { PLOT_SELECTED          } from '../subworkflows/local/plot_admix_str'
+include { QC                     } from '../subworkflows/local/QC'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -26,12 +27,21 @@ include { PLOT_SELECTED          } from '../subworkflows/local/plot_admix_str'
 workflow HYBRIDER {
 
     take:
-    ch_samplesheet // channel: samplesheet read in from --input
+    ch_vcfs // channel: samplesheet read in from --input
+    ch_reads
 
     main:
-
     ch_versions      = Channel.empty()
     ch_multiqc_files = Channel.empty()
+
+    if (params.upstream){
+    QC(
+        ch_reads
+    )
+    ch_versions = ch_versions.mix(QC.out.versions.first())
+    }
+
+    if (params.downstream){
     ch_str_in        = Channel.empty()
     ch_admix_in      = Channel.empty()
     ch_kvalue        = Channel.empty()
@@ -42,7 +52,7 @@ workflow HYBRIDER {
     // MODULE: Run FastQC
     //
     FILT_CONVERTER(
-        ch_samplesheet,
+        ch_vcfs,
         params.meta,
         params.locmiss,
         params.indmiss,
@@ -75,7 +85,7 @@ workflow HYBRIDER {
 
     ch_kvalue   = ch_kvalue.mix(Channel.from(1..params.k_value))
     ch_admix_in = ch_admix_in.combine(ch_kvalue)
- 
+
     ADMIXTURE(ch_admix_in)
 
     ch_versions = ch_versions.mix(ADMIXTURE.out.versions.first())
@@ -91,7 +101,7 @@ workflow HYBRIDER {
     ch_k2       = ch_k2.mix(PLOT_SELECTED.out.meta)
     ch_versions = ch_versions.mix(PLOT_SELECTED.out.versions.first())
 
-    
+
 
     PREPARE_ML(
         ch_vcf,
@@ -106,8 +116,10 @@ workflow HYBRIDER {
         params.rminvariable,
         params.dropna
     )
-    
+
     ch_versions = ch_versions.mix(PREPARE_ML.out.versions.first())
+
+}
 
     //
     // Collate and save software versions

@@ -8,15 +8,22 @@ process IPYRAD {
         'quay.io/biocontainers/ipyrad:0.9.95--pyh7cba7a3_0' }"
 
     input:
-    tuple path(params_file), path(reads), path(reference)
+    path params_file
+    path assembly_file
+    path reads
+    path reference
+    path edits
+    path clust
+    path outfiles
 
     output:
-    path "*.json"               , emit: assembly_file
-    path "params-*.txt"         , emit: parameter_file
-    path "${prefix}_edits"      , optional: true, emit: trimmed_dir
-    path "${prefix}_clust*"     , optional: true, emit: clustered_reads
-    path "${prefix}_outfiles"   , optional: true, emit: outfiles_dir
-    path "versions.yml"         , emit: versions
+    path "*.json"                      , emit: assembly_file
+    path "params-*.txt"                , emit: parameter_file
+    path "${prefix}_edits"             , optional: true, emit: trimmed_dir
+    path "${prefix}_edits/*.fastq.gz"  , optional: true, emit: trimmed_reads
+    path "${prefix}_clust*"            , optional: true, emit: clustered_reads
+    path "${prefix}_outfiles"          , optional: true, emit: outfiles_dir
+    path "versions.yml"                , emit: versions
 
     when:
     task.ext.when == null || task.ext.when

@@ -16,7 +16,7 @@ process IPYRAD_BRANCH {
     
 
     output:
-    path "*.json"              , emit: assembly_object
+    path "${prefix}.json"              , emit: assembly_object
     path "params-${prefix}.txt", emit: newparams
     path "versions.yml"        , emit: versions
 

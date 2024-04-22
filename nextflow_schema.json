@@ -389,6 +389,29 @@
         "dropna": {
             "type": "boolean",
             "default": true
+        },
+        "reference": {
+            "type": "string",
+            "default": "[]"
+        },
+        "datatype": {
+            "type": "string",
+            "default": "pairddrad"
+        },
+        "overhang": {
+            "type": "string",
+            "default": "CATGC,AATT"
+        },
+        "downstream": {
+            "type": "boolean"
+        },
+        "upstream": {
+            "type": "boolean",
+            "default": true
+        },
+        "assembly_method": {
+            "type": "string",
+            "default": "denovo"
         }
     }
 }

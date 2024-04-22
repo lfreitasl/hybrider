@@ -35,7 +35,7 @@ workflow PIPELINE_INITIALISATION {
     monochrome_logs   // boolean: Do not use coloured log outputs
     nextflow_cli_args //   array: List of positional nextflow CLI args
     outdir            //  string: The output directory where the results will be saved
-    input             //  string: Path to input samplesheet
+    vcfs             //  string: Path to input samplesheet
     reads             //  string: Path to rads samplesheet
 
     main:
@@ -77,10 +77,11 @@ workflow PIPELINE_INITIALISATION {
     //
     // Create channel from input file provided through params.input
     //
+    if (params.vcfs){
     Channel
-        .fromSamplesheet("input")
+        .fromSamplesheet("vcfs")
         .set { ch_vcfs }
-
+    }
     //
     // Create channel from input file provided through params.reads
     //
@@ -105,7 +106,7 @@ workflow PIPELINE_INITIALISATION {
         .set { ch_reads }
 
     emit:
-    samplesheet_vcf   = ch_samplesheet
+    samplesheet_vcf   = ch_vcfs
     samplesheet_reads = ch_reads
     versions          = ch_versions
 }

@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import ipyrad as ipp
 import argparse
 
 def create_file(**kwargs):
-    ## create an Assembly object named name. 
+    ## create an Assembly object named name.
 	data1 = ipp.Assembly(kwargs['assembly_name'])
     ## setting/modifying parameters for this Assembly object
 	data1.set_params('project_dir', "./")

@@ -13,7 +13,7 @@ process IPYRAD_BRANCH {
     each minsamples
     path edits
     path reference
-    
+
 
     output:
     path "${prefix}.json"              , emit: assembly_object
@@ -25,7 +25,7 @@ process IPYRAD_BRANCH {
 
     script:
     def args   = task.ext.args ?: ''
-    def prefix = tesk.ext.prefix ?: mindepth && minsamples ? "${assembly.baseName}_${mindepth}d_${minsamples}samp" :
+    def prefix = task.ext.prefix ?: mindepth && minsamples ? "${assembly.baseName}_${mindepth}d_${minsamples}samp" :
                  mindepth && !minsamples ? "${assembly.baseName}_${mindepth}d" :
                  !mindepth && minsamples ? "${assembly.baseName}_${minsamples}samp" : ''
     def ref    = reference ? "--reference_sequence $reference" : ''
@@ -47,8 +47,8 @@ process IPYRAD_BRANCH {
 
     stub:
     def args = task.ext.args ?: '-s 1234567'
-    
-   
+
+
     """
     touch ${prefix}.bam
 

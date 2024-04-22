@@ -25,17 +25,18 @@ process IPYRAD_INPUT {
 
     script:
     def args   = task.ext.args ?: ''
-    def prefix = tesk.ext.prefix ?: 'assembly'
+    def prefix = task.ext.prefix ?: 'assembly'
     def ref    = reference ? "--reference_sequence $reference" : ''
 
     """
     ipyrad_input.py \\
+        $ref \\
+        $args \\
         --assembly_name $prefix \\
         --assembly_method $method \\
         --datatype $datatype \\
-        --restriction_overhang $overhang \\
-        $ref \\
-        $args
+        --restriction_overhang $overhang
+
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -46,8 +47,8 @@ process IPYRAD_INPUT {
     stub:
     def args   = task.ext.args ?: reference ? "--reference_sequence ${reference}" : ''
     def prefix = tesk.ext.prefix ?: 'assembly'
-    
-   
+
+
     """
     touch params-${prefix}.txt
 

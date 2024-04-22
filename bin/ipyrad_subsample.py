@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import ipyrad as ipp
 import argparse
@@ -6,7 +6,7 @@ import argparse
 def subsample_file(**kwargs):
     ## load and assembly object
 	data1 = ipp.load_json(kwargs['assembly_name']+'.json')
-    
+
 	#gathering samples with good enough depth
 	keep=list(data1.stats_dfs.s3.index[data1.stats_dfs.s3["clusters_hidepth"]>10000])
 	#branch assembly object

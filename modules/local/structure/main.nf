@@ -39,8 +39,8 @@ process STRUCTURE {
     def rename_q = rep_per_k ? "mv *rep1_q ${str.baseName}_str_K${k_value}_rep${rep_per_k}_q" : '' 
 
     """
-    cat /tmp/extraparams > ./extraparams
-    cat /tmp/mainparams > ./mainparams
+    cat /extraparams > ./extraparams
+    cat /mainparams > ./mainparams
     sed -i 's/#define NOADMIX[[:space:]]*[0-9]/#define NOADMIX ${ifnoadmix} /' ./extraparams
     sed -i 's/#define FREQSCORR[[:space:]]*[0-9]/#define FREQSCORR ${iffreqscorr} /' ./extraparams
     sed -i 's/#define INFERALPHA[[:space:]]*[0-9]/#define INFERALPHA ${ifinferalpha} /' ./extraparams

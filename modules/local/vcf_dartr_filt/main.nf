@@ -5,8 +5,8 @@ process FILTER_VCF {
 
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/mulled-v2-7cbdd89e4a230442dcff2455c5693faa81d0cda4:f36d68574b255379a8cabacc75a9ec9c783aff6e-0':
-        'biocontainers/mulled-v2-7cbdd89e4a230442dcff2455c5693faa81d0cda4:f36d68574b255379a8cabacc75a9ec9c783aff6e-0' }"
+        'docker://lfreitasl/dartr:latest':
+        'docker.io/lfreitasl/dartr:latest' }"
 
     input:
     path vcf
@@ -20,11 +20,11 @@ process FILTER_VCF {
     path '*.str'                                                , emit: str
     path '*.treemix.gz'                         , optional: true, emit: treemix
     tuple val("$vcf.baseName"), path("*sorted_meta.csv"), path('filt_*.vcf')  , emit: vcf
-    tuple val("$vcf.baseName"), path("*sorted_meta.csv"), path('*.ped')       , emit: ped
-    tuple val("$vcf.baseName"), path("*sorted_meta.csv"), path('*.map')       , emit: map
-    tuple val("$vcf.baseName"), path("*sorted_meta.csv"), path('*.bed')       , emit: bed
-    tuple val("$vcf.baseName"), path("*sorted_meta.csv"), path('*.bim')       , emit: bim
-    tuple val("$vcf.baseName"), path("*sorted_meta.csv"), path('*.fam')       , emit: fam
+    // tuple val("$vcf.baseName"), path("*sorted_meta.csv"), path('*.ped')       , emit: ped
+    // tuple val("$vcf.baseName"), path("*sorted_meta.csv"), path('*.map')       , emit: map
+    // tuple val("$vcf.baseName"), path("*sorted_meta.csv"), path('*.bed')       , emit: bed
+    // tuple val("$vcf.baseName"), path("*sorted_meta.csv"), path('*.bim')       , emit: bim
+    // tuple val("$vcf.baseName"), path("*sorted_meta.csv"), path('*.fam')       , emit: fam
     path "versions.yml"                             , emit: versions
 
     when:

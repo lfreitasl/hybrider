@@ -4,6 +4,7 @@
 
 include { FILTER_VCF  } from '../../modules/local/vcf_dartr_filt/main'
 include { META_VCF    } from '../../modules/local/meta_filt_vcf/main'
+include { PLINK_VCF   } from '../../modules/local/plink/vcf/main'
 
 workflow FILT_CONVERTER {
     take:
@@ -30,26 +31,29 @@ workflow FILT_CONVERTER {
 
     ch_str      = ch_str.mix(FILTER_VCF.out.str.ifEmpty([]))
     ch_vcf      = ch_vcf.mix(FILTER_VCF.out.vcf.ifEmpty([]))
-    ch_bed      = ch_bed.mix(FILTER_VCF.out.bed.ifEmpty([]))
-    ch_bim      = ch_bim.mix(FILTER_VCF.out.bim.ifEmpty([]).map{meta,sampmeta,file -> return [meta,file]})
-    ch_fam      = ch_fam.mix(FILTER_VCF.out.fam.ifEmpty([]).map{meta,sampmeta,file -> return [meta,file]})
+
+    PLINK_VCF(FILTER_VCF.out.vcf.ifEmpty([]))
+
+    ch_bed      = ch_bed.mix(PLINK_VCF.out.bed.ifEmpty([]))
+    ch_bim      = ch_bim.mix(PLINK_VCF.out.bim.ifEmpty([]).map{meta,sampmeta,file -> return [meta,file]})
+    ch_fam      = ch_fam.mix(PLINK_VCF.out.fam.ifEmpty([]).map{meta,sampmeta,file -> return [meta,file]})
     ch_admx     = ch_admx.mix(ch_bed.combine(ch_bim, by: 0).combine(ch_fam,by: 0))
     ch_versions = ch_versions.mix(FILTER_VCF.out.versions.first().ifEmpty(null))
 
     META_VCF(ch_vcf, ch_str)
-    
+
     ch_vcf_meta = ch_vcf_meta.mix(META_VCF.out.vcf_meta.ifEmpty([]))
 
     ch_vcf_meta
     .map { meta, sampmeta, vcfs ->
         return [ meta.splitCsv( header:true, sep:',' ), sampmeta, vcfs ]
-     }
+    }
     .map { meta, sampmeta, vcfs ->
-        return [create_csv_channel(meta[0]), sampmeta, vcfs] 
+        return [create_csv_channel(meta[0]), sampmeta, vcfs]
     }
     .set { ch_vcf_meta }
 
-    
+
 
     emit:
     str      = ch_str                                 // channel: [ val(meta), [ reads ] ]
@@ -68,6 +72,6 @@ def create_csv_channel(LinkedHashMap row) {
     meta.n_loc  = row.n_locs
 
     // add path(s) of the fastq file(s) to the meta map
-    def csv_meta = meta 
+    def csv_meta = meta
     return csv_meta
 }

@@ -10,7 +10,7 @@
             "type": "object",
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input data and save output data.",
-            "required": ["vcfs", "outdir", "reads"],
+            "required": ["vcfs", "outdir"],
             "properties": {
                 "vcfs": {
                     "type": "string",
@@ -24,17 +24,10 @@
                     "schema": "assets/schema_input.json",
                     "default": "/data/home/lucas.freitas/nextflow_modules/nf-core-hybrider/test/samples.csv"
                 },
-                "reads": {
+                "meta": {
                     "type": "string",
-                    "format": "file-path",
-                    "exists": true,
-                    "mimetype": "text/csv",
-                    "pattern": "^\\S+\\.csv$",
-                    "help_text": "You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row. See [usage docs](https://nf-co.re/hybrider/usage#samplesheet-input).",
-                    "default": "/data/home/lucas.freitas/nextflow_modules/nf-core-hybrider/test/raw_files.csv",
-                    "description": "Path to comma-separated file containing information about the samples in the experiment.",
-                    "fa_icon": "fas fa-file-csv",
-                    "schema": "assets/schema_reads.json"
+                    "default": "/data/home/lucas.freitas/nextflow_modules/nf-core-hybrider/test/Metadata_SecondAssembly_f.txt",
+                    "description": "Samplesheet with sample metadata. It is necessary at least a columns with name \"samples\" indicating the name os samples, another optional column is \"POP\" column with information from sample location, it is used to generate treemix outputs if \"popinfo == true\""
                 },
                 "outdir": {
                     "type": "string",
@@ -256,11 +249,6 @@
             "description": "",
             "default": "",
             "properties": {
-                "meta": {
-                    "type": "string",
-                    "default": "/data/home/lucas.freitas/nextflow_modules/nf-core-hybrider/test/Metadata_SecondAssembly_f.txt",
-                    "description": "Samplesheet with sample metadata. It is necessary at least a columns with name \"samples\" indicating the name os samples, another optional column is \"POP\" column with information from sample location, it is used to generate treemix outputs if \"popinfo == true\""
-                },
                 "locmiss": {
                     "type": "number",
                     "default": 0.7,
@@ -281,6 +269,119 @@
                     "description": "Whether use or not population information"
                 }
             }
+        },
+        "structure_params": {
+            "title": "Structure Params",
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "noadmix": {
+                    "type": "boolean"
+                },
+                "freqscorr": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "inferalpha": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "alpha": {
+                    "type": "number",
+                    "default": 0.199
+                },
+                "inferlambda": {
+                    "type": "boolean"
+                },
+                "lambda": {
+                    "type": "integer",
+                    "default": 1
+                },
+                "ploidy": {
+                    "type": "integer",
+                    "default": 2
+                },
+                "burnin": {
+                    "type": "integer",
+                    "default": 2000
+                },
+                "rep_per_k": {
+                    "type": "integer",
+                    "default": 2
+                },
+                "k_value": {
+                    "type": "integer",
+                    "default": 1
+                },
+                "mcmc": {
+                    "type": "integer",
+                    "default": 20000
+                }
+            }
+        },
+        "plot_cluster_params": {
+            "title": "Plot Cluster Params",
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "plot_admix": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "plot_str": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "writecsv": {
+                    "type": "boolean",
+                    "default": true
+                }
+            }
+        },
+        "machine_learning_params": {
+            "title": "Machine Learning Params",
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "inferbypop": {
+                    "type": "boolean"
+                },
+                "whichpop": {
+                    "type": "string",
+                    "default": "any"
+                },
+                "inferbyclust": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "smaller": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "method": {
+                    "type": "string",
+                    "default": "mean"
+                },
+                "upper": {
+                    "type": "number",
+                    "default": 0.9
+                },
+                "lower": {
+                    "type": "number",
+                    "default": 0.1
+                },
+                "rminvariable": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "dropna": {
+                    "type": "boolean",
+                    "default": true
+                }
+            }
         }
     },
     "allOf": [
@@ -298,120 +399,15 @@
         },
         {
             "$ref": "#/definitions/dartr_module_for_filtering"
+        },
+        {
+            "$ref": "#/definitions/structure_params"
+        },
+        {
+            "$ref": "#/definitions/plot_cluster_params"
+        },
+        {
+            "$ref": "#/definitions/machine_learning_params"
         }
-    ],
-    "properties": {
-        "noadmix": {
-            "type": "boolean"
-        },
-        "freqscorr": {
-            "type": "boolean",
-            "default": true
-        },
-        "inferalpha": {
-            "type": "boolean",
-            "default": true
-        },
-        "alpha": {
-            "type": "number",
-            "default": 0.199
-        },
-        "inferlambda": {
-            "type": "boolean"
-        },
-        "lambda": {
-            "type": "integer",
-            "default": 1
-        },
-        "ploidy": {
-            "type": "integer",
-            "default": 2
-        },
-        "burnin": {
-            "type": "integer",
-            "default": 2000
-        },
-        "rep_per_k": {
-            "type": "integer",
-            "default": 2
-        },
-        "k_value": {
-            "type": "integer",
-            "default": 1
-        },
-        "mcmc": {
-            "type": "integer",
-            "default": 20000
-        },
-        "plot_admix": {
-            "type": "boolean",
-            "default": true
-        },
-        "plot_str": {
-            "type": "boolean",
-            "default": true
-        },
-        "writecsv": {
-            "type": "boolean",
-            "default": true
-        },
-        "inferbypop": {
-            "type": "boolean"
-        },
-        "whichpop": {
-            "type": "string",
-            "default": "any"
-        },
-        "inferbyclust": {
-            "type": "boolean",
-            "default": true
-        },
-        "smaller": {
-            "type": "boolean",
-            "default": true
-        },
-        "method": {
-            "type": "string",
-            "default": "mean"
-        },
-        "upper": {
-            "type": "number",
-            "default": 0.9
-        },
-        "lower": {
-            "type": "number",
-            "default": 0.1
-        },
-        "rminvariable": {
-            "type": "boolean",
-            "default": true
-        },
-        "dropna": {
-            "type": "boolean",
-            "default": true
-        },
-        "reference": {
-            "type": "string",
-            "default": "[]"
-        },
-        "datatype": {
-            "type": "string",
-            "default": "pairddrad"
-        },
-        "overhang": {
-            "type": "string",
-            "default": "CATGC,AATT"
-        },
-        "downstream": {
-            "type": "boolean"
-        },
-        "upstream": {
-            "type": "boolean",
-            "default": true
-        },
-        "assembly_method": {
-            "type": "string",
-            "default": "denovo"
-        }
-    }
+    ]
 }

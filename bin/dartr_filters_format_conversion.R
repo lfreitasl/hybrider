@@ -14,8 +14,11 @@ maf<-as.numeric(args[5])  #filt loci based on minor allele frequency
 pref<-args[6] #prefix for naming the outputs
 usepopinfo<-as.logical(args[7]) #whether or not use population information if present on samplesheet
 
+myg<-read.vcfR(vcfp)
+myg<-myg[is.biallelic(myg),]
+myg<-vcfR2genlight(myg)
 #Reading vcf into genlight object
-myg<-gl.read.vcf(vcfp)
+myg<-gl.compliance.check(myg)
 
 #reading metadata table and matching the order of column "samples" in metadata to order of inds in gl
 meta<-read.table(meta, header=T)

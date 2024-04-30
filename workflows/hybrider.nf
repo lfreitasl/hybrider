@@ -15,7 +15,7 @@ include { methodsDescriptionText } from '../subworkflows/local/utils_lfreitasl_h
 include { FILT_CONVERTER         } from '../subworkflows/local/conversions'
 include { RUN_STRUCTURE          } from '../subworkflows/local/structure.nf'
 include { PLOT_SELECTED          } from '../subworkflows/local/plot_admix_str'
-include { QC                     } from '../subworkflows/local/QC'
+//include { QC                     } from '../subworkflows/local/QC'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -28,20 +28,20 @@ workflow HYBRIDER {
 
     take:
     ch_vcfs // channel: samplesheet read in from --input
-    ch_reads
+    //ch_reads
 
     main:
     ch_versions      = Channel.empty()
     ch_multiqc_files = Channel.empty()
 
-    if (params.upstream){
-    QC(
-        ch_reads
-    )
-    ch_versions = ch_versions.mix(QC.out.versions.first())
-    }
+    // if (params.upstream){
+    // QC(
+    //     ch_reads
+    // )
+    // ch_versions = ch_versions.mix(QC.out.versions.first())
+    // }
 
-    if (params.downstream){
+    // if (params.downstream){
     ch_str_in        = Channel.empty()
     ch_admix_in      = Channel.empty()
     ch_kvalue        = Channel.empty()
@@ -119,7 +119,7 @@ workflow HYBRIDER {
 
     ch_versions = ch_versions.mix(PREPARE_ML.out.versions.first())
 
-}
+// }
 
     //
     // Collate and save software versions

@@ -36,7 +36,7 @@ workflow LFREITASL_HYBRIDER {
 
     take:
     vcfs // channel: samplesheet read in from --input
-    reads
+    //reads
 
     main:
 
@@ -44,8 +44,8 @@ workflow LFREITASL_HYBRIDER {
     // WORKFLOW: Run pipeline
     //
     HYBRIDER (
-        vcfs,
-        reads
+        vcfs//,
+        //reads
     )
 
     emit:
@@ -72,26 +72,30 @@ workflow {
         params.monochrome_logs,
         args,
         params.outdir,
-        params.vcfs,
-        params.reads
+        params.vcfs//,
+        //params.reads
     )
 
     //
     // WORKFLOW: Run main workflow
     //
-    if (params.vcfs && params.downstream && !params.upstream){
-    LFREITASL_HYBRIDER (
-        PIPELINE_INITIALISATION.out.samplesheet_vcf,
-        []
-    )
-    }
+    // if (params.vcfs && params.downstream && !params.upstream){
+    // LFREITASL_HYBRIDER (
+    //     PIPELINE_INITIALISATION.out.samplesheet_vcf,
+    //     []
+    // )
+    // }
 
-    if (params.upstream && !params.downstream){
-        LFREITASL_HYBRIDER(
-            [],
-            PIPELINE_INITIALISATION.out.samplesheet_reads
-        )
-    }
+    // if (params.upstream && !params.downstream){
+    //     LFREITASL_HYBRIDER(
+    //         [],
+    //         PIPELINE_INITIALISATION.out.samplesheet_reads
+    //     )
+    // }
+
+    LFREITASL_HYBRIDER (
+        PIPELINE_INITIALISATION.out.samplesheet_vcf
+    )
 
     //
     // SUBWORKFLOW: Run completion tasks

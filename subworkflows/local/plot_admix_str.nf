@@ -15,11 +15,23 @@ workflow PLOT_SELECTED {
     main:
     ch_meta_K      = Channel.empty()
     ch_versions    = Channel.empty()
-    
+
     if (exportmeta){
-        EXPORT_META(files,false, false, false, true)
-        ch_meta_K   = ch_meta_K.mix(EXPORT_META.out.meta)
-        ch_versions = ch_versions.mix(EXPORT_META.out.versions)
+        if (plot_str && plot_admix){
+            EXPORT_META(files,true, true, false, true)
+            ch_meta_K   = ch_meta_K.mix(EXPORT_META.out.meta)
+            ch_versions = ch_versions.mix(EXPORT_META.out.versions)
+        }
+        if (plot_str && !plot_admix){
+            EXPORT_META(files,false, true, false, true)
+            ch_meta_K   = ch_meta_K.mix(EXPORT_META.out.meta)
+            ch_versions = ch_versions.mix(EXPORT_META.out.versions)
+        }
+        if (!plot_str && plot_admix){
+            EXPORT_META(files,true, false, false, true)
+            ch_meta_K   = ch_meta_K.mix(EXPORT_META.out.meta)
+            ch_versions = ch_versions.mix(EXPORT_META.out.versions)
+        }
     }
 
     if (plot_str){

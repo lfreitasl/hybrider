@@ -2,7 +2,7 @@
 
 ### Automated structure/admixture plots ###
 
-# Load the libraries for this R code 
+# Load the libraries for this R code
 library(pophelper)
 library(grid)
 library(gridExtra)
@@ -15,40 +15,53 @@ args = commandArgs(trailingOnly=TRUE)
 
 # Define plotting function no loc
 plotnoloc <- function(files, admixture=F, admbestk){
-    #Generating number of colors
-    getcolours <- colorRampPalette(brewer.pal(8, "Dark2"))
-    
-    if (admixture) {
-        if (admbestk){adm_bestk()}
-    }
-    #Saving all plots into a variable
-    if (length(files)>8){mypal <- getcolours(length(files))}
-    else {mypal <- brewer.pal(8, "Dark2")}
-    plots<-list()
-    for (i in 1:length(files)){
-        alg_tmp <- alignK(files[i])
-        p_temp  <- plotQ(qlist=mergeQ(alg_tmp), sortind="Cluster1",
-                grplabsize=2.5,linesize=0.8,pointsize=3,
-                ordergrp=TRUE, returnplot=T,exportplot=F,
-                showlegend=T, barbordercolour="#A4A4A4",barbordersize=0.1,
-                showyaxis=T, splab=paste("K=",i,sep=""), divcol = "black", divtype = 2,
-                divsize=0.6, divalpha=1,
-                legendkeysize=10,legendtextsize=10,legendmargin=c(2,2,2,0),
-                legendrow=1, showindlab=T, indlabsize=7, useindlab=T,
-                splabsize=7, clustercol=mypal)
-        plots[[i]]<-p_temp
-    }
-    return(plots)
+  #Generating number of colors
+  getcolours <- colorRampPalette(brewer.pal(8, "Dark2"))
+
+  if (admixture) {
+    if (admbestk){adm_bestk()}
+  }
+  #Saving all plots into a variable
+  if (length(files)>8){mypal <- getcolours(length(files))}
+  else {mypal <- brewer.pal(8, "Dark2")}
+  plots<-list()
+  for (i in 1:length(files)){
+    k<-i
+    tmp <- as.data.frame(files[i][[1]])
+    tmp$K <- k[1]
+    tmp$Samples <- rownames(tmp)
+    tmp<-tmp[order(tmp$Cluster01),]
+    tmp$Samples <- factor(tmp$Samples, levels = unique(tmp$Samples)) #necessary to ggplot keep order
+    tmp <- melt(tmp, id = c("Samples", "K"))
+    names(tmp)[3:4] <- c("Group", "Posterior")
+    #tmp$Samples <- reorder(tmp$Samples, -tmp$Posterior)
+    #tmp$Region <- samp_meta$POP
+    grp.labs <- paste("K =", k)
+    names(grp.labs) <- k
+    p3 <- ggplot(tmp, aes(x = Samples, y = Posterior, fill = Group))
+    p3 <- p3 + geom_bar(stat = "identity")
+    p3 <- p3 + facet_grid(scales = "free_x", space = "free",
+                          labeller = labeller(K = grp.labs))
+    p3 <- p3 + theme_bw()
+    p3 <- p3 + ylab("Posterior membership probability")
+    p3 <- p3 + theme(legend.position='none')
+    p3 <- p3 + scale_fill_manual(values=mypal)
+    p3 <- p3 + theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 7))
+    plots[[i]]<-p3
+  }
+  return(plots)
 }
 
 
 #Define plot function withloc
 plotloc<- function(files, samp_meta, admixture=F, admbestk){
+    getcolours <- colorRampPalette(brewer.pal(8, "Dark2"))
     if (admixture){
         if(admbestk){adm_bestk()}
     }
     if (length(files)>8){mypal <- getcolours(length(files))}
     else {mypal <- brewer.pal(8, "Dark2")}
+    samp_meta<-samp_meta[match(row.names(files[1][[1]]), samp_meta$samples),]
     plots<-list()
     for (i in 1:length(files)){
         k<-i
@@ -62,7 +75,7 @@ plotloc<- function(files, samp_meta, admixture=F, admbestk){
         names(grp.labs) <- k
         p3 <- ggplot(tmp, aes(x = Samples, y = Posterior, fill = Group))
         p3 <- p3 + geom_bar(stat = "identity")
-        p3 <- p3 + facet_grid(K ~ Region, scales = "free_x", space = "free", 
+        p3 <- p3 + facet_grid(K ~ Region, scales = "free_x", space = "free",
                             labeller = labeller(K = grp.labs))
         p3 <- p3 + theme_bw()
         p3 <- p3 + ylab("Posterior membership probability")
@@ -151,10 +164,14 @@ build_meta_qvalues<-function(filepath="./", endpattern, metadata, subpattern, st
 }
 
 #Define function for exporting csv with metadata and Q values
-export_meta_qvalues<-function(writemeta){
+export_meta_qvalues<-function(writemeta, str, adm){
+    if (str && adm){
     t_adm<-build_meta_qvalues(filepath = "./",endpattern = "*.Q$",metadata = samp_meta,subpattern = "ADMIX_Cluster",str = F)
     t_str<-build_meta_qvalues(filepath = "./",endpattern = "*_f$",metadata = samp_meta,subpattern = "STR_Cluster",str = T)
-
+    len <- sapply(t_str, length)
+    t_str<-t_str[order(len)]
+    len <- sapply(t_adm, length)
+    t_adm<-t_adm[order(len)]
     #Creating a list with merged dataframes (meta, admix and str) for each K
     merge_list<-list()
     for (i in (1:length(t_adm))){
@@ -190,6 +207,65 @@ export_meta_qvalues<-function(writemeta){
         if (writemeta){write.csv(merge_list[[i]],file= paste("meta","_str_admix_","K",i,".csv", sep="") ,quote=F,row.names=F)}
     }
     return(merge_list)
+    }
+    if (str && !adm){
+        t_str <- build_meta_qvalues(filepath = "./", endpattern = "*_f$", metadata = samp_meta, subpattern = "STR_Cluster", str = TRUE)
+    len <- sapply(t_str, length)
+    t_str<-t_str[order(len)]
+
+    strcolindex<-character()
+    aligned_runs<-list()
+    for (i in (1:length(t_str))){
+        strcolindex<- append(strcolindex, paste("STR_Cluster", i, sep=""))
+        slistbyk<- list()
+        slistbyk[[1]]<-data.frame(t_str[[i]][,strcolindex], row.names=t_str[[i]][,"samples"])
+        if (i==1){
+            colnames(slistbyk[[1]])[1]<-"STR_Cluster1"
+        }
+        aligned_runs[[i]]<-slistbyk
+        }
+
+    for (i in (1:length(aligned_runs))){
+        for (j in (1:length(aligned_runs[[i]]))){
+            colnames<- colnames(aligned_runs[[i]][[j]])
+            t_str[[i]][colnames]<-aligned_runs[[i]][[j]][colnames]
+        }
+        if (writemeta){
+          write.csv(t_str[[i]],file= paste("meta","_str_","K",(i),".csv", sep="") ,quote=F,row.names=F)
+        }
+    }
+    return(t_str)
+    }
+
+    if (!str && adm){
+    t_adm <- build_meta_qvalues(filepath = "./", endpattern = "*.Q$",metadata = samp_meta,subpattern = "ADMIX_Cluster",str = FALSE)
+    len <- sapply(t_adm, length)
+    t_adm<-t_adm[order(len)]
+
+    admcolindex<-character()
+    aligned_runs<-list()
+    for (i in (1:length(t_adm))){
+        strcolindex<- append(admcolindex, paste("ADMIX_Cluster", i, sep=""))
+        slistbyk<- list()
+        slistbyk[[1]]<-data.frame(t_adm[[i]][,admcolindex], row.names=t_adm[[i]][,"samples"])
+        if (i==1){
+            colnames(slistbyk[[1]])[1]<-"ADMIX_Cluster1"
+        }
+        aligned_runs[[i]]<-slistbyk
+        }
+
+    for (i in (1:length(aligned_runs))){
+        for (j in (1:length(aligned_runs[[i]]))){
+            colnames<- colnames(aligned_runs[[i]][[j]])
+            t_adm[[i]][colnames]<-aligned_runs[[i]][[j]][colnames]
+        }
+        if (writemeta){
+          write.csv(t_str[[i]],file= paste("meta","_admix_","K",(i),".csv", sep="") ,quote=F,row.names=F)
+        }
+    }
+    return(t_str)
+    }
+
 }
 
 #Define function for formatting aligned K into plotting functions:
@@ -219,10 +295,10 @@ samp_meta<-read.csv(meta)
 
 ##NOVO FRAMEWORK:
 if (writecsvs){
-    val<-export_meta_qvalues(writemeta = T)
+    val<-export_meta_qvalues(writemeta = T, str=structure, adm=admixture)
 }
 if (!writecsvs){
-    val<-export_meta_qvalues(writemeta = F)
+    val<-export_meta_qvalues(writemeta = F, str=structure, adm=admixture)
 }
 if (admixture){
     t_adm<-format_slist(val, str=F)

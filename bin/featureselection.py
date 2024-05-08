@@ -40,108 +40,32 @@ meta=pd.read_csv("../results/ML/filt_biallelic_filtered_classified_meta_K2.csv",
 meta
 
 # %%
-meta["Classification_K2"].value_counts()
-
-# %%
 gen=pd.read_csv("../results/ML/filt_biallelic_filtered.genotype.csv", index_col=0)
 gen
-
-# %%
-meta.index.tolist() == gen.index.tolist()
 
 # %%
 k=5
 
 # %%
-skf=StratifiedKFold(n_splits=k, shuffle=False, random_state=None)
-
-# %%
-classes=meta.iloc[:,-1].values
-print(classes)
-classes=LabelEncoder().fit_transform(classes)
-print(classes)
-
-
-# %%
-skf.get_n_splits(gen,classes)
-
-# %%
-test=skf.split(gen, classes)
-
-# %%
 #This loop adds information of each train/test in k-fold
-d={}
-for i,(train_index, test_index) in enumerate(test,start=1):
-    train_x=gen.iloc[train_index].values
-    test_x=gen.iloc[test_index].values
-    train_y=classes[train_index]
-    test_y=classes[test_index]
-    d[("train_x"+format(i))]=train_x
-    d[("train_y"+format(i))]=train_y
-    d[("test_x"+format(i))]=test_x
-    d[("test_y"+format(i))]=test_y
-
+def split_fun(k,meta,gen):
+    skf=StratifiedKFold(n_splits=k, shuffle=False, random_state=None)
+    classes=meta.iloc[:,-1].values
+    classes=LabelEncoder().fit_transform(classes)
+    test=skf.split(gen, classes)
+    d={}
+    for i,(train_index, test_index) in enumerate(test,start=1):
+        train_x=gen.iloc[train_index].values
+        test_x=gen.iloc[test_index].values
+        train_y=classes[train_index]
+        test_y=classes[test_index]
+        d[("train_x"+format(i))]=train_x
+        d[("train_y"+format(i))]=train_y
+        d[("test_x"+format(i))]=test_x
+        d[("test_y"+format(i))]=test_y
+    return d
 # %%
-files=np.asarray(list(d.keys()))
-files
-
-
-# %%
-for i in range(1,k+1):
-    files_in_fold=files[np.char.endswith(files,format(i))]
-    train_in_fold=files_in_fold[np.char.startswith(files_in_fold,"train")]
-    test_in_fold=files_in_fold[np.char.startswith(files_in_fold,"test")]
-    
-    print("fold"+format(i))
-    
-    print(d[train_in_fold[0]])
-    print("length="+format(len(d[train_in_fold[0]])))
-    print(d[train_in_fold[1]])
-    print("length="+format(len(d[train_in_fold[1]])))
-
-    print(d[test_in_fold[0]])
-    print("length="+format(len(d[test_in_fold[0]])))
-    print(d[test_in_fold[1]])
-    print("length="+format(len(d[test_in_fold[1]])))
-        
-
-# %%
-#Getting a model for each fold
-def get_xgb_model(d, k):
-    files=np.asarray(list(d.keys()))
-    models = []
-    for i in range(1,k+1):
-        files_in_fold=files[np.char.endswith(files,format(i))]
-        train_in_fold=files_in_fold[np.char.startswith(files_in_fold,"train")]
-        test_in_fold=files_in_fold[np.char.startswith(files_in_fold,"test")]
-        
-        # instanciar o modelo XGBoost
-        model = XGBClassifier()
-        # chamar o fit para o modelo
-        model.fit(d[train_in_fold[0]], d[train_in_fold[1]], verbose=False)
-        # fazer previsões em cima do dataset de teste
-        #predictions = model.predict(z_test)
-        models.append(model)
-    return models
-
-# %%
-#Getting a model for each fold
-def get_rf_model(d, k):
-    files=np.asarray(list(d.keys()))
-    models = []
-    for i in range(1,k+1):
-        files_in_fold=files[np.char.endswith(files,format(i))]
-        train_in_fold=files_in_fold[np.char.startswith(files_in_fold,"train")]
-        test_in_fold=files_in_fold[np.char.startswith(files_in_fold,"test")]
-        
-        # instanciar o modelo XGBoost
-        model = rf(n_estimators=300)
-        # chamar o fit para o modelo
-        model.fit(d[train_in_fold[0]], d[train_in_fold[1]])
-        # fazer previsões em cima do dataset de teste
-        #predictions = model.predict(z_test)
-        models.append(model)
-    return models
+d=split_fun(5, meta=meta, gen=gen)
 
 # %%
 def process_fold_dt(i, dictionary):
@@ -299,36 +223,6 @@ def get_svm_model_parallel(dictionary, k):
     
     models=dict(sorted(models.items()))
     return models
-
-# %%
-# Generate correlation matrix
-correlation_matrix = gen.corr()
-
-# Set threshold for correlation
-threshold = 0.6  # Example threshold
-
-# Find highly correlated variables
-highly_correlated_vars = set()
-for i in range(len(correlation_matrix.columns)):
-    for j in range(i):
-        if abs(correlation_matrix.iloc[i, j]) > threshold:
-            colname = correlation_matrix.columns[i]
-            highly_correlated_vars.add(colname)
-
-# Print highly correlated variables
-print("Highly correlated variables:", highly_correlated_vars)
-
-# Drop highly correlated variables from DataFrame
-df_filtered = gen.drop(columns=highly_correlated_vars)
-
-# Display the filtered DataFrame
-print("\nFiltered DataFrame:")
-print(df_filtered)
-
-# %%
-#Running without parallelization
-t1=get_xgb_model(d, 5)
-
 # %%
 t_knn=get_knn_model_parallel(d, 5)
 
@@ -347,11 +241,6 @@ t_rf=get_rf_model_parallel(d,5)
 
 # %%
 t_dt=get_dt_model_parallel(d,5)
-
-# %%
-importants=list(t2.values())[4].feature_importances_
-snpnames=gen.columns
-pd.DataFrame({'Feature':snpnames,'Importance':importants}).sort_values('Importance', ascending=False)
 
 # %%
 def save_image(filename): 
@@ -376,72 +265,27 @@ def save_image(filename):
     p.close()   
 
 # %%
-for i in range(1,k+1):
-    files_in_fold=files[np.char.endswith(files,format(i))]
-    test_in_fold=files_in_fold[np.char.startswith(files_in_fold,"test")]
-   # print(list(t_xgb.values())[i-1].score(d[test_in_fold[0]],d[test_in_fold[1]]))
-    predictions = list(t_xgb.values())[i-1].predict(d[test_in_fold[0]])
-    cm = confusion_matrix(d[test_in_fold[1]], predictions, labels=list(t_xgb.values())[i-1].classes_)
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=list(t_xgb.values())[i-1].classes_)
-    disp.plot()
-save_image("xgb.pdf")
-
-
+def get_cm(k,dicts,models,outname):
+    files=np.asarray(list(dicts.keys()))
+    for i in range(1,k+1):
+        files_in_fold=files[np.char.endswith(files,format(i))]
+        test_in_fold=files_in_fold[np.char.startswith(files_in_fold,"test")]
+    # print(list(t_xgb.values())[i-1].score(d[test_in_fold[0]],d[test_in_fold[1]]))
+        predictions = list(models.values())[i-1].predict(dicts[test_in_fold[0]])
+        cm = confusion_matrix(dicts[test_in_fold[1]], predictions, labels=list(models.values())[i-1].classes_)
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=list(models.values())[i-1].classes_)
+        disp.plot()
+    save_image((outname + ".pdf"))
 # %%
-for i in range(1,k+1):
-    files_in_fold=files[np.char.endswith(files,format(i))]
-    test_in_fold=files_in_fold[np.char.startswith(files_in_fold,"test")]
-    print(list(t_rf.values())[i-1].score(d[test_in_fold[0]],d[test_in_fold[1]]))
-    predictions = list(t_rf.values())[i-1].predict(d[test_in_fold[0]])
-    cm = confusion_matrix(d[test_in_fold[1]], predictions, labels=list(t_rf.values())[i-1].classes_)
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=list(t_rf.values())[i-1].classes_)
-    disp.plot()
-save_image("rf.pdf")
-
+get_cm(k,d,t_xgb,"xgb")
+# %% [markdown]
+#I need to rank the models based on accuracy and report it
+#
+#I need to add importance extraction and forward feature selection
 # %%
-for i in range(1,k+1):
-    files_in_fold=files[np.char.endswith(files,format(i))]
-    test_in_fold=files_in_fold[np.char.startswith(files_in_fold,"test")]
-    print(list(t_dt.values())[i-1].score(d[test_in_fold[0]],d[test_in_fold[1]]))
-    predictions = list(t_dt.values())[i-1].predict(d[test_in_fold[0]])
-    cm = confusion_matrix(d[test_in_fold[1]], predictions, labels=list(t_dt.values())[i-1].classes_)
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=list(t_dt.values())[i-1].classes_)
-    disp.plot()
-save_image("dt.pdf")
-
-# %%
-for i in range(1,k+1):
-    files_in_fold=files[np.char.endswith(files,format(i))]
-    test_in_fold=files_in_fold[np.char.startswith(files_in_fold,"test")]
-    print(list(t_knn.values())[i-1].score(d[test_in_fold[0]],d[test_in_fold[1]]))
-    predictions = list(t_knn.values())[i-1].predict(d[test_in_fold[0]])
-    cm = confusion_matrix(d[test_in_fold[1]], predictions, labels=list(t_knn.values())[i-1].classes_)
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=list(t_knn.values())[i-1].classes_)
-    disp.plot()
-save_image("knn.pdf")
-
-# %%
-for i in range(1,k+1):
-    files_in_fold=files[np.char.endswith(files,format(i))]
-    test_in_fold=files_in_fold[np.char.startswith(files_in_fold,"test")]
-    print(list(t_nvb.values())[i-1].score(d[test_in_fold[0]],d[test_in_fold[1]]))
-    predictions = list(t_nvb.values())[i-1].predict(d[test_in_fold[0]])
-    cm = confusion_matrix(d[test_in_fold[1]], predictions, labels=list(t_nvb.values())[i-1].classes_)
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=list(t_nvb.values())[i-1].classes_)
-    disp.plot()
-save_image("nvb.pdf")
-
-# %%
-for i in range(1,k+1):
-    files_in_fold=files[np.char.endswith(files,format(i))]
-    test_in_fold=files_in_fold[np.char.startswith(files_in_fold,"test")]
-    print(list(t_svm.values())[i-1].score(d[test_in_fold[0]],d[test_in_fold[1]]))
-    predictions = list(t_svm.values())[i-1].predict(d[test_in_fold[0]])
-    cm = confusion_matrix(d[test_in_fold[1]], predictions, labels=list(t_svm.values())[i-1].classes_)
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=list(t_svm.values())[i-1].classes_)
-    disp.plot()
-save_image("svm.pdf")
-
+importants=list(t2.values())[4].feature_importances_
+snpnames=gen.columns
+pd.DataFrame({'Feature':snpnames,'Importance':importants}).sort_values('Importance', ascending=False)
 # %%
 len(test_x)
 
@@ -457,8 +301,3 @@ for i, (train_index, test_index) in enumerate(skf.split(gen, classes)):
     print(f"Fold {i}:")
     print(f"  Train: index={train_index}")
     print(f"  Test:  index={test_index}")
-
-# %%
-
-
-

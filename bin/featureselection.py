@@ -276,6 +276,21 @@ def get_cm(k,dicts,models,outname):
         disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=list(models.values())[i-1].classes_)
         disp.plot()
     save_image((outname + ".pdf"))
+
+# %%
+def get_means(dicts,models, k):
+    inlist=list(models.keys())
+    folds=list(dicts.keys())
+    folds_test=[elem for elem in folds if elem.startswith('test_')]
+    folds_train=[elem for elem in inlist if elem.startswith('train_')]
+    acc=[]
+    for i in range(1,k+1):
+        names=[elem for elem in folds_test if elem.endswith(format(i))]
+        model=models[folds_train[i-1]]
+        sc=model.score(dicts[names[0]],dicts[names[1]])
+        acc.append(sc)
+    res=np.mean(acc)
+    return res
 # %%
 get_cm(k,d,t_xgb,"xgb")
 # %% [markdown]

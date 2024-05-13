@@ -289,10 +289,33 @@ def get_means(dicts,models, k):
         model=models[folds_train[i-1]]
         sc=model.score(dicts[names[0]],dicts[names[1]])
         acc.append(sc)
-    res=np.mean(acc)
-    return res
+    mean=[np.mean(acc)]
+    sd=[np.std(acc)]
+    df=pd.DataFrame({'Mean':mean,'SD':sd})
+    return df
 # %%
 get_cm(k,d,t_xgb,"xgb")
+
+# %%
+get_means(d,t_xgb,k)
+# %%
+#This is for treebased algorithms
+def get_important_snps(gen,models,k):
+    d={}
+    for i in range(1,k+1):
+        importants=list(models.values())[i-1].feature_importances_
+        snpnames=gen.columns
+        df=pd.DataFrame({'Feature':snpnames,'Importance':importants}).sort_values('Feature', ascending=False)
+        d[("fold_"+format(i))]=df
+    concatenated_df=pd.concat(d.values())
+    grouped_df=concatenated_df.groupby('Feature')['Importance'].agg(['mean', 'std']).reset_index()
+    grouped_df.columns=['Feature', 'Importance', 'SD_folds']
+    return grouped_df
+# %%
+#This is for all other algorithms
+def get_forward_snps():
+
+
 # %% [markdown]
 #I need to rank the models based on accuracy and report it
 #

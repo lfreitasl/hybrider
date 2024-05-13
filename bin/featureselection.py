@@ -15,14 +15,14 @@ from sklearn.ensemble import RandomForestClassifier as rf #using
 from sklearn.model_selection import StratifiedKFold #using
 from xgboost import XGBClassifier #using
 from sklearn.preprocessing import LabelEncoder #using
-from joblib import Parallel, delayed #NOT
 from sklearn.feature_selection import SelectFromModel #using
 from sklearn.neighbors import KNeighborsClassifier as knn #using
 from sklearn.naive_bayes import GaussianNB #using
 from sklearn import svm #using
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay #using
-import concurrent.futures #using
 from matplotlib.backends.backend_pdf import PdfPages #using
+from sklearn.feature_selection import SequentialFeatureSelector #using
+import concurrent.futures #using
 import os
 import glob
 import time
@@ -313,8 +313,24 @@ def get_important_snps(gen,models,k):
     return grouped_df
 # %%
 #This is for all other algorithms
-def get_forward_snps():
-
+def get_forward_snps(i,models,n,dicts):
+    folds=list(dicts.keys())
+    folds_test=[elem for elem in folds if elem.startswith('train_')]
+    folds_train=[elem for elem in folds_test if elem.endswith(format(i))]
+    t=SequentialFeatureSelector(list(models.values())[i-1], n_features_to_select=n)
+    model=t.fit(dicts[folds_train[0]],dicts[folds_train[1]])
+    selected_features=model.get_support()
+    return selected_features
+def get_forward_snps_parallel(gen,models,n,dicts,k):
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures=[]
+        for i in range(1,k+1):
+            future = executor.submit(get_forward_snps, i, models, n, dicts)
+            futures.append(future)
+    
+    results = [future.result() for future in futures]
+    reduced = np.logical_and.reduce(results)
+    return reduced
 
 # %% [markdown]
 #I need to rank the models based on accuracy and report it

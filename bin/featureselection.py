@@ -11,9 +11,12 @@ from scipy.cluster import hierarchy
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics.pairwise import nan_euclidean_distances
 from sklearn import tree
+from sklearn.model_selection import train_test_split
+from sklearn.feature_selection import SelectFromModel #Using
 from sklearn.ensemble import RandomForestClassifier as rf #using
 from sklearn.model_selection import StratifiedKFold #using
 from xgboost import XGBClassifier #using
+from sklearn.feature_selection import SelectKBest, chi2 #using feature selection
 from sklearn.preprocessing import LabelEncoder #using
 from sklearn.feature_selection import SelectFromModel #using
 from sklearn.neighbors import KNeighborsClassifier as knn #using
@@ -34,18 +37,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import sys
-
 # %%
-meta=pd.read_csv("../results/ML/filt_biallelic_filtered_classified_meta_K2.csv", index_col=0)
-meta
-
-# %%
-gen=pd.read_csv("../results/ML/filt_biallelic_filtered.genotype.csv", index_col=0)
-gen
-
-# %%
-k=5
-
+#Split validation set
+def split_train_test(meta,gen):
+    classes=meta.iloc[:,-1].values
+    classes=LabelEncoder().fit_transform(classes)
+    X_train, X_test, y_train, y_test,indices_train,indices_test =\
+    train_test_split(gen.values, classes, gen.index,
+                     test_size=0.2,
+                     random_state=0,
+                     stratify=classes)
+    d={}
+    d["train_x"]=X_train
+    d["test_x"]=X_test
+    d["train_y"]=y_train
+    d["test_y"]=y_test
+    d["train_i"]=indices_train
+    d["test_i"]=indices_test
+    return d
 # %%
 #This loop adds information of each train/test in k-fold
 def split_fun(k,meta,gen):
@@ -64,8 +73,6 @@ def split_fun(k,meta,gen):
         d[("test_x"+format(i))]=test_x
         d[("test_y"+format(i))]=test_y
     return d
-# %%
-d=split_fun(5, meta=meta, gen=gen)
 
 # %%
 def process_fold_dt(i, dictionary):
@@ -223,24 +230,6 @@ def get_svm_model_parallel(dictionary, k):
     
     models=dict(sorted(models.items()))
     return models
-# %%
-t_knn=get_knn_model_parallel(d, 5)
-
-# %%
-t_nvb=get_naiveb_model_parallel(d,5)
-
-# %%
-t_svm=get_svm_model_parallel(d,5)
-
-# %%
-#Running with parallelization
-t_xgb=get_xgb_model_parallel(d, 5)
-
-# %%
-t_rf=get_rf_model_parallel(d,5)
-
-# %%
-t_dt=get_dt_model_parallel(d,5)
 
 # %%
 def save_image(filename): 
@@ -294,10 +283,20 @@ def get_means(dicts,models, k):
     df=pd.DataFrame({'Mean':mean,'SD':sd})
     return df
 # %%
-get_cm(k,d,t_xgb,"xgb")
-
-# %%
-get_means(d,t_xgb,k)
+#get validation means
+def get_val_means(meta,gen,models,k):
+    inlist=list(models.keys())
+    classes=meta.iloc[:,-1].values
+    classes=LabelEncoder().fit_transform(classes)
+    acc=[]
+    for i in range(1,k+1):
+        model=models[inlist[i-1]]
+        sc=model.score(gen.values,classes)
+        acc.append(sc)
+    mean=[np.mean(acc)]
+    sd=[np.std(acc)]
+    df=pd.DataFrame({'Mean':mean,'SD':sd})
+    return df
 # %%
 #This is for treebased algorithms
 def get_important_snps(gen,models,k):
@@ -311,47 +310,162 @@ def get_important_snps(gen,models,k):
     grouped_df=concatenated_df.groupby('Feature')['Importance'].agg(['mean', 'std']).reset_index()
     grouped_df.columns=['Feature', 'Importance', 'SD_folds']
     return grouped_df
+
 # %%
-#This is for all other algorithms
-def get_forward_snps(i,models,n,dicts):
-    folds=list(dicts.keys())
-    folds_test=[elem for elem in folds if elem.startswith('train_')]
-    folds_train=[elem for elem in folds_test if elem.endswith(format(i))]
-    t=SequentialFeatureSelector(list(models.values())[i-1], n_features_to_select=n)
-    model=t.fit(dicts[folds_train[0]],dicts[folds_train[1]])
+#Testing parallel function for that task
+def get_forward_snps(estimator,n,meta,gen):
+    classes=meta.iloc[:,-1].values
+    classes=LabelEncoder().fit_transform(classes)
+    t=SequentialFeatureSelector(estimator, n_features_to_select=n,n_jobs=-1)
+    model=t.fit(gen.values,classes)
     selected_features=model.get_support()
     return selected_features
-def get_forward_snps_parallel(gen,models,n,dicts,k):
+# Define function for parallel execution of get_forward_snps
+def parallel_get_forward_snps(estimator, n, meta, gen):
+    return get_forward_snps(estimator, n, meta, gen)
+
+# List of tuples containing arguments for get_forward_snps
+def fs_non_tree_models(n):
+    estimators = [
+        (knn(), n, meta_train, gen_train),
+        (GaussianNB(), n, meta_train, gen_train),
+        (svm.SVC(decision_function_shape='ovo'), n, meta_train, gen_train)
+    ]
+
+    # Parallel execution of get_forward_snps for each estimator
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures=[]
-        for i in range(1,k+1):
-            future = executor.submit(get_forward_snps, i, models, n, dicts)
-            futures.append(future)
-    
-    results = [future.result() for future in futures]
-    reduced = np.logical_and.reduce(results)
-    return reduced
+        results = executor.map(lambda args: parallel_get_forward_snps(*args), estimators)
+
+    # Retrieve results
+    knn_mask, nvb_mask, svm_mask = results
+    d={}
+    d["knn_mask"]=knn_mask
+    d["nvb_mask"]=nvb_mask
+    d["svm_mask"]=svm_mask
+    return d
+
 
 # %% [markdown]
-#I need to rank the models based on accuracy and report it
-#
-#I need to add importance extraction and forward feature selection
+#Running code from the functions above
 # %%
-importants=list(t2.values())[4].feature_importances_
-snpnames=gen.columns
-pd.DataFrame({'Feature':snpnames,'Importance':importants}).sort_values('Importance', ascending=False)
-# %%
-len(test_x)
+#Metadata
+meta=pd.read_csv("../results/ML/filt_biallelic_filtered_classified_meta_K2.csv", index_col=0)
+meta
 
 # %%
-fold_4[0]
+#Genotype data
+gen=pd.read_csv("../results/ML/filt_biallelic_filtered.genotype.csv", index_col=0)
+gen
 
 # %%
-testarray=meta.iloc[fold_1[1]].Classification_K2.to_numpy()
-testarray
+#Number of folds
+k=5
 
 # %%
-for i, (train_index, test_index) in enumerate(skf.split(gen, classes)):
-    print(f"Fold {i}:")
-    print(f"  Train: index={train_index}")
-    print(f"  Test:  index={test_index}")
+#Number of snps to select
+n=30
+# %%
+#Creating partitioned data
+split=split_train_test(meta, gen)
+meta_val=meta.loc[split["test_i"]]
+gen_val=gen.loc[split["test_i"]]
+meta_train=meta.loc[split["train_i"]]
+gen_train=gen.loc[split["train_i"]]
+
+
+# %%
+#Function to run feature selection on non-tree algorithms
+fs_30=fs_non_tree_models(n)
+# %%
+#Feature selection for non-tree models
+knn_mask=fs_30["knn_mask"]
+nvb_mask=fs_30["nvb_mask"]
+svm_mask=fs_30["svm_mask"]
+# %%
+#Subsetting variants from the original gen_train
+gen_train_knn=gen_train.loc[:,knn_mask]
+gen_train_nvb=gen_train.loc[:,nvb_mask]
+gen_train_svm=gen_train.loc[:,svm_mask]
+
+# %%
+#Generating folds for each subseted data
+d_knn=split_fun(k,meta_train,gen_train_knn)
+d_nvb=split_fun(k,meta_train,gen_train_nvb)
+d_svm=split_fun(k,meta_train,gen_train_svm)
+
+# %%
+t_svm=get_svm_model_parallel(d_svm,5)
+t_nvb=get_naiveb_model_parallel(d_nvb,5)
+t_knn=get_knn_model_parallel(d_knn,5)
+# %%
+#Get means of the fited models throughout k-folds
+m_knn=get_means(d_knn,t_knn,k)
+m_nvb=get_means(d_nvb,t_nvb,k)
+m_svm=get_means(d_svm,t_svm,k)
+# %%
+print("knn","\n", m_knn)
+print("nvb","\n", m_nvb)
+print("svm","\n", m_svm)
+# %%
+#Now run with validation dataset
+gen_val_knn=gen_val.loc[:,knn_mask]
+gen_val_nvb=gen_val.loc[:,nvb_mask]
+gen_val_svm=gen_val.loc[:,svm_mask]
+
+# %%
+#Getting validation means
+m_val_knn=get_val_means(meta_val,gen_val_knn,t_knn,k)
+m_val_nvb=get_val_means(meta_val,gen_val_knn,t_nvb,k)
+m_val_svm=get_val_means(meta_val,gen_val_knn,t_svm,k)
+
+# %%
+print("knn","\n", m_val_knn)
+print("nvb","\n", m_val_nvb)
+print("svm","\n", m_val_svm)
+# %%
+d=split_fun(5, meta=meta_train, gen=gen_train)
+# %%
+t_knn=get_knn_model_parallel(d, 5)
+
+# %%
+t_nvb=get_naiveb_model_parallel(d,5)
+
+# %%
+t_svm=get_svm_model_parallel(d,5)
+
+# %%
+#Running with parallelization
+t_xgb=get_xgb_model_parallel(d, 5)
+
+# %%
+t_rf=get_rf_model_parallel(d,5)
+
+# %%
+t_dt=get_dt_model_parallel(d,5)
+
+# %%
+print("xgb","\n", get_means(d,t_xgb,k))
+print("dt", "\n",get_means(d,t_dt,k))
+print("rf", "\n",get_means(d,t_rf,k))
+print("nvb","\n",get_means(d,t_nvb,k))
+print("knn","\n",get_means(d,t_knn,k))
+print("svm","\n",get_means(d,t_svm,k))
+
+# %%
+get_cm(k,d,t_xgb,"xgb")
+
+# %%
+mask_10=get_forward_snps_parallel(gen,t_xgb,10,d,k)
+mask_15=get_forward_snps_parallel(gen,t_xgb,15,d,k)
+mask_20=get_forward_snps_parallel(gen,t_xgb,20,d,k)
+# %%
+importance_df=get_important_snps(gen,t_xgb,k)
+gen2=gen.loc[:, mask_10]
+d2=split_fun(5, meta=meta, gen=gen2)
+t_xgb2=get_xgb_model_parallel(d2, 5)
+get_means(d2,t_xgb2,k)
+importance_df[importance_df['Feature'].isin(gen2.columns)]
+# %%
+#Mapeamento para plot:
+lut = dict(zip(meta.Classification_K2.unique(), ["#9a0200", "#db5856","#ffc0cb"]))
+# %%

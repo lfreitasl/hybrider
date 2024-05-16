@@ -6,7 +6,7 @@ from Bio import Entrez
 from sklearn.cluster import KMeans
 from shutil import copyfile
 from urllib.request import urlopen
-from scipy.cluster.hierarchy import dendrogram, linkage
+from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
 from scipy.cluster import hierarchy
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics.pairwise import nan_euclidean_distances
@@ -353,7 +353,7 @@ def parallel_get_forward_snps(estimator, n, meta, gen):
     return get_forward_snps(estimator, n, meta, gen)
 
 # List of tuples containing arguments for get_forward_snps
-def fs_non_tree_models():
+def fs_non_tree_models(meta_train, gen_train):
     estimators = [
         (knn(), "auto", meta_train, gen_train),
         (GaussianNB(), "auto", meta_train, gen_train),
@@ -372,7 +372,26 @@ def fs_non_tree_models():
     d["svm_mask"]=svm_mask
     return d
 
-
+# %%
+#Function to select best plotting mode for hierarchical cluster
+def rank_report_linkage(gen,meta):
+    methods=["single", "complete","average","weighted","centroid","median","ward"]
+    classes=meta.iloc[:,-1].values
+    classes=LabelEncoder().fit_transform(classes)
+    d={}
+    for method in methods:
+        linked = linkage(gen, method=method)
+        clusters=fcluster(linked,3,criterion="maxclust")
+        score=adjusted_rand_score(classes, clusters)
+        d[method]=score
+    max_value= max(d.values())
+    max_keys = [key for key, value in d.items() if value == max_value]
+    lut = dict(zip(meta.Classification_K2.unique(), ["#9a0200", "#db5856","#ffc0cb"]))
+    plots=[]
+    for i in max_keys:
+        g_train = sns.clustermap(gen, method=i,row_colors=meta.Classification_K2.map(lut))
+        plots.append(g_train)
+    return plots
 # %% [markdown]
 #Running code from the functions above
 # %%
@@ -402,9 +421,17 @@ gen_train=gen.loc[split["train_i"]]
 
 # %%
 #Pre-filtering whole training set with univariate feature selection method
+classes=meta_train.iloc[:,-1].values
+classes=LabelEncoder().fit_transform(classes)
+selector=SelectKBest(chi2, k="all")
+selector=selector.fit(gen_train, classes)
+masked_features=selector.feature_names_in_[selector.pvalues_<0.05]
+gen_train_new=gen_train[masked_features]
+
+
 # %%
 #Function to run wrapped feature selection on non-tree algorithms (forward feature selection)
-fs_non_tree=fs_non_tree_models()
+fs_non_tree=fs_non_tree_models(meta_train,gen_filtered)
 # %%
 #Feature selection for non-tree models
 knn_mask=fs_non_tree["knn_mask"]
@@ -503,6 +530,9 @@ m_val_rf=get_val_means(meta_val,gen_val_rf,t_rf,k)
 print("xgb","\n", m_val_xgb)
 print("dt","\n", m_val_dt)
 print("rf","\n", m_val_rf)
+
+# %%
+
 # %%
 d=split_fun(5, meta=meta_train, gen=gen_train)
 # %%

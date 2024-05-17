@@ -312,21 +312,21 @@ def get_important_snps(gen,models,k):
     return grouped_df
 # %%
 #This is for treebased algorithms
-def get_important_snps(estimator,meta,gen):
+def get_important_snps(estimator,meta,gen,n=None):
     classes=meta.iloc[:,-1].values
     classes=LabelEncoder().fit_transform(classes)
-    model=SelectFromModel(estimator).fit(gen.values, classes)
+    model=SelectFromModel(estimator, max_features=n).fit(gen.values, classes)
     selected_features=model.get_support()
     return selected_features
 # Define function for parallel execution of get_important_snps
-def get_important_snps_parallel(estimator,meta,gen):
-    return get_important_snps(estimator, meta, gen)
+def get_important_snps_parallel(estimator,meta,gen, n):
+    return get_important_snps(estimator, meta, gen, n)
 
-def fs_tree_models(meta,gen):
+def fs_tree_models(meta,gen, n):
     estimators = [
-        (rf(n_estimators=300), meta, gen),
-        (XGBClassifier(), meta, gen),
-        (tree.DecisionTreeClassifier(), meta, gen)
+        (rf(n_estimators=300), meta, gen, n),
+        (XGBClassifier(), meta, gen, n),
+        (tree.DecisionTreeClassifier(), meta, gen, n)
     ]
     # Parallel execution of get_important_snps for each estimator
     with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -353,11 +353,11 @@ def parallel_get_forward_snps(estimator, n, meta, gen):
     return get_forward_snps(estimator, n, meta, gen)
 
 # List of tuples containing arguments for get_forward_snps
-def fs_non_tree_models(meta_train, gen_train):
+def fs_non_tree_models(meta_train, gen_train,n="auto"):
     estimators = [
-        (knn(), "auto", meta_train, gen_train),
-        (GaussianNB(), "auto", meta_train, gen_train),
-        (svm.SVC(decision_function_shape='ovo'), "auto", meta_train, gen_train)
+        (knn(), n, meta_train, gen_train),
+        (GaussianNB(), n, meta_train, gen_train),
+        (svm.SVC(decision_function_shape='ovo'), n, meta_train, gen_train)
     ]
 
     # Parallel execution of get_forward_snps for each estimator
@@ -431,7 +431,7 @@ gen_train_new=gen_train[masked_features]
 
 # %%
 #Function to run wrapped feature selection on non-tree algorithms (forward feature selection)
-fs_non_tree=fs_non_tree_models(meta_train,gen_filtered)
+fs_non_tree=fs_non_tree_models(meta_train,gen_filtered, n=30)
 # %%
 #Feature selection for non-tree models
 knn_mask=fs_non_tree["knn_mask"]

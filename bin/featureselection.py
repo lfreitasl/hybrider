@@ -392,6 +392,35 @@ def rank_report_linkage(gen,meta):
         g_train = sns.clustermap(gen, method=i,row_colors=meta.Classification_K2.map(lut))
         plots.append(g_train)
     return plots
+
+# %%
+#Pre-filtering whole training set with univariate feature selection method
+def broader_selection(df,meta,P):
+    classes=meta.iloc[:,-1].values
+    classes=LabelEncoder().fit_transform(classes)
+    selector=SelectKBest(chi2, k="all")
+    selector=selector.fit(df, classes)
+    masked_features=selector.feature_names_in_[selector.pvalues_<P]
+    gen_train_new=df[masked_features]
+    return gen_train_new
+
+# %%
+#Removing highly correlated variables
+def remove_col_f(df, threshold):
+    corr_matrix = df.corr().abs()
+
+    # Select upper triangle of correlation matrix
+    upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
+
+    # Find features with correlation greater than 0.95
+    to_drop = [column for column in upper.columns if any(upper[column] > threshold)]
+
+    # Drop features 
+    df.drop(to_drop, axis=1, inplace=True)
+
+    print('Removed Columns {}'.format(to_drop))
+    return df
+
 # %% [markdown]
 #Running code from the functions above
 # %%
@@ -410,28 +439,37 @@ k=5
 
 # %%
 #Number of snps to select
-#n=30 - OBS: This is gonna be changed to "auto"
+n=30
+
+# %%
+#P_value for chi2 test for univariate feature selection
+P=0.05
+
+# %%
+#r² value for among variables correlation filtering.
+R=0.8
+
 # %%
 #Creating partitioned data
 split=split_train_test(meta, gen)
+#Validation set
 meta_val=meta.loc[split["test_i"]]
 gen_val=gen.loc[split["test_i"]]
+#Train-Test set
 meta_train=meta.loc[split["train_i"]]
 gen_train=gen.loc[split["train_i"]]
 
-# %%
-#Pre-filtering whole training set with univariate feature selection method
-classes=meta_train.iloc[:,-1].values
-classes=LabelEncoder().fit_transform(classes)
-selector=SelectKBest(chi2, k="all")
-selector=selector.fit(gen_train, classes)
-masked_features=selector.feature_names_in_[selector.pvalues_<0.05]
-gen_train_new=gen_train[masked_features]
+#Perform first dimensionality reduction
+gen_train=broader_selection(gen_train,meta_train,P)
+gen_train=remove_col_f(gen_train, R)
+
+#Subseting the validation set to keep same SNPs
+gen_val=gen_val[gen_train.columns]
 
 
 # %%
 #Function to run wrapped feature selection on non-tree algorithms (forward feature selection)
-fs_non_tree=fs_non_tree_models(meta_train,gen_filtered, n=30)
+fs_non_tree=fs_non_tree_models(meta_train,gen_train, n=30)
 # %%
 #Feature selection for non-tree models
 knn_mask=fs_non_tree["knn_mask"]
@@ -481,7 +519,7 @@ print("svm","\n", m_val_svm)
 
 # %%
 #Tree-based models
-fs_trees=fs_tree_models(meta_train,gen_train)
+fs_trees=fs_tree_models(meta_train,gen_train, n)
 # %%
 #Feature selection for tree models
 xgb_mask=fs_trees["xgb_mask"]

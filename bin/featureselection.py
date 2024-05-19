@@ -312,7 +312,6 @@ def get_important_snps(gen,models,k):
     return grouped_df
 # %%
 #This is for treebased algorithms
-<<<<<<< HEAD
 def get_important_snps(estimator,meta,gen,n=None):
     classes=meta.iloc[:,-1].values
     classes=LabelEncoder().fit_transform(classes)
@@ -333,28 +332,6 @@ def fs_tree_models(meta,gen, n):
     with concurrent.futures.ThreadPoolExecutor() as executor:
         results = executor.map(lambda args: get_important_snps_parallel(*args), estimators)
 
-=======
-def get_important_snps(estimator,meta,gen):
-    classes=meta.iloc[:,-1].values
-    classes=LabelEncoder().fit_transform(classes)
-    model=SelectFromModel(estimator).fit(gen.values, classes)
-    selected_features=model.get_support()
-    return selected_features
-# Define function for parallel execution of get_important_snps
-def get_important_snps_parallel(estimator,meta,gen):
-    return get_important_snps(estimator, meta, gen)
-
-def fs_tree_models(meta,gen):
-    estimators = [
-        (rf(n_estimators=300), meta, gen),
-        (XGBClassifier(), meta, gen),
-        (tree.DecisionTreeClassifier(), meta, gen)
-    ]
-    # Parallel execution of get_important_snps for each estimator
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        results = executor.map(lambda args: get_important_snps_parallel(*args), estimators)
-
->>>>>>> 85aa0a0534f3331a29be53a90917eac5d1e53890
     # Retrieve results
     rf_mask, xgb_mask, dt_mask = results
     d={}
@@ -553,12 +530,6 @@ m_val_rf=get_val_means(meta_val,gen_val_rf,t_rf,k)
 print("xgb","\n", m_val_xgb)
 print("dt","\n", m_val_dt)
 print("rf","\n", m_val_rf)
-<<<<<<< HEAD
-
-# %%
-
-=======
->>>>>>> 85aa0a0534f3331a29be53a90917eac5d1e53890
 # %%
 d=split_fun(5, meta=meta_train, gen=gen_train)
 # %%

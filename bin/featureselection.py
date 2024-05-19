@@ -1,23 +1,16 @@
 # %%
 #Script for machine learning step
 # %%
-from Bio import SeqIO
-from Bio import Entrez
-from sklearn.cluster import KMeans
-from shutil import copyfile
-from urllib.request import urlopen
-from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
-from scipy.cluster import hierarchy
-from sklearn.cluster import AgglomerativeClustering
-from sklearn.metrics.pairwise import nan_euclidean_distances
+from scipy.cluster.hierarchy import dendrogram, linkage, fcluster #using
 from sklearn import tree
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split #using
 from sklearn.feature_selection import SelectFromModel #Using
 from sklearn.ensemble import RandomForestClassifier as rf #using
 from sklearn.model_selection import StratifiedKFold #using
 from xgboost import XGBClassifier #using
 from sklearn.feature_selection import SelectKBest, chi2 #using feature selection
 from sklearn.preprocessing import LabelEncoder #using
+from sklearn.metrics.cluster import adjusted_rand_score #using
 from sklearn.feature_selection import SelectFromModel #using
 from sklearn.neighbors import KNeighborsClassifier as knn #using
 from sklearn.naive_bayes import GaussianNB #using
@@ -26,17 +19,10 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay #using
 from matplotlib.backends.backend_pdf import PdfPages #using
 from sklearn.feature_selection import SequentialFeatureSelector #using
 import concurrent.futures #using
-import os
-import glob
-import time
-import re
-import pickle
-import csv
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-import sys
 # %%
 #Split validation set
 def split_train_test(meta,gen):
@@ -384,14 +370,18 @@ def rank_report_linkage(gen,meta):
         clusters=fcluster(linked,3,criterion="maxclust")
         score=adjusted_rand_score(classes, clusters)
         d[method]=score
-    max_value= max(d.values())
-    max_keys = [key for key, value in d.items() if value == max_value]
-    lut = dict(zip(meta.Classification_K2.unique(), ["#9a0200", "#db5856","#ffc0cb"]))
-    plots=[]
-    for i in max_keys:
-        g_train = sns.clustermap(gen, method=i,row_colors=meta.Classification_K2.map(lut))
-        plots.append(g_train)
-    return plots
+    # max_value= max(d.values())
+    # max_keys = [key for key, value in d.items() if value == max_value]
+    # lut = dict(zip(meta.Classification_K2.unique(), ["#9a0200", "#db5856","#ffc0cb"]))
+    # plots={}
+    # for i in max_keys:
+    #     g_train = sns.clustermap(gen, method=i,row_colors=meta.Classification_K2.map(lut))
+    #     plots[i]=g_train
+    d=sorted(d.items(), key=lambda x:x[1], reverse=True)
+    d=dict(d)
+    d=pd.DataFrame(list(d.items()), columns=['Best_grouping_Method', 'Rand_Index'])
+    d=d.iloc[[0]]
+    return d
 
 # %%
 #Pre-filtering whole training set with univariate feature selection method
@@ -421,6 +411,51 @@ def remove_col_f(df, threshold):
     print('Removed Columns {}'.format(to_drop))
     return df
 
+# %%
+#Function to process dicitonaries generated inside snp_selector function
+def df_generator(test_means,val_means,hierarchs):
+    test_dfs = []
+    validation_dfs = []
+    grouping_dfs = []
+
+    for key in test_means:
+        test_df = test_means[key].copy()
+        test_df['Model'] = key
+        test_dfs.append(test_df)
+        
+        validation_df = val_means[key].copy()
+        validation_df['Model'] = key
+        validation_dfs.append(validation_df)
+        
+        grouping_df = hierarchs[key].copy()
+        grouping_df['Model'] = key
+        grouping_dfs.append(grouping_df)
+
+    # Concatenate the DataFrames
+    test_combined_df = pd.concat(test_dfs)
+    validation_combined_df = pd.concat(validation_dfs)
+    grouping_combined_df = pd.concat(grouping_dfs)
+
+    # Set the Model as the index
+    test_combined_df.set_index('Model', inplace=True)
+    validation_combined_df.set_index('Model', inplace=True)
+    grouping_combined_df.set_index('Model', inplace=True)
+
+    # Rename columns for clarity
+    test_combined_df.columns = ['Test_Mean', 'Test_SD']
+    validation_combined_df.columns = ['Validation_Mean', 'Validation_SD']
+
+    # Combine all DataFrames into one
+    combined_df = pd.concat([test_combined_df, validation_combined_df, grouping_combined_df], axis=1)
+
+    # Create a new columns to display best model based on mean of validation accuracy and RI:
+    combined_df['Rank'] = combined_df[['Validation_Mean', 'Rand_Index']].mean(axis=1)
+    
+    # Sort to report
+    combined_df = combined_df.sort_values(by='Rank', ascending=False)
+
+    # Return the resulting DataFrame
+    return combined_df
 # %% [markdown]
 #Running code from the functions above
 # %%
@@ -443,167 +478,78 @@ n=30
 
 # %%
 #P_value for chi2 test for univariate feature selection
-P=0.05
+p=0.05
 
 # %%
 #r² value for among variables correlation filtering.
-R=0.8
+r=0.8
 
 # %%
-#Creating partitioned data
-split=split_train_test(meta, gen)
-#Validation set
-meta_val=meta.loc[split["test_i"]]
-gen_val=gen.loc[split["test_i"]]
-#Train-Test set
-meta_train=meta.loc[split["train_i"]]
-gen_train=gen.loc[split["train_i"]]
+def snp_selector (meta, gen, k, p, r, n):
+    #Creating partitioned data
+    split=split_train_test(meta, gen)
+    #Validation set
+    meta_val=meta.loc[split["test_i"]]
+    gen_val=gen.loc[split["test_i"]]
+    #Train-Test set
+    meta_train=meta.loc[split["train_i"]]
+    gen_train=gen.loc[split["train_i"]]
 
-#Perform first dimensionality reduction
-gen_train=broader_selection(gen_train,meta_train,P)
-gen_train=remove_col_f(gen_train, R)
+    #Perform first dimensionality reduction
+    gen_train=broader_selection(gen_train,meta_train,p)
+    gen_train=remove_col_f(gen_train, r)
 
-#Subseting the validation set to keep same SNPs
-gen_val=gen_val[gen_train.columns]
+    #Subseting the validation set to keep same SNPs
+    gen_val=gen_val[gen_train.columns]
 
+    #Function to run wrapped feature selection on non-tree algorithms (forward feature selection)
+    fs_non_tree=fs_non_tree_models(meta_train,gen_train, n)
+    #Tree-based models
+    if n=="auto":
+        fs_trees=fs_tree_models(meta_train,gen_train, n=None)
+    else:
+        fs_trees=fs_tree_models(meta_train,gen_train, n)
+    
+    #Merging dirs
+    models_mask={**fs_non_tree,**fs_trees}
+    d={} #Store partitions
+    t={} #Store fitted models
+    gen_model={} #Store train dataframes for each selected feature
+    gen_vals={} #Store validation for each set of selected features
+    test_means={} #Store mean for fold models accuracy on test datasets
+    val_means={} #Store mean for fold models accuracy on valdiation dataset
+    hierarchs={} #Store best hierarch cluster model for each set of model best set of snps
+    for key in models_mask:
+        model_mask=models_mask[key]
+        gen_model[key]=gen_train.loc[:,model_mask]
+        d_model=split_fun(k,meta_train,gen_model[key])
+        d[key]=d_model
+        if key == "knn_mask":
+            t_model=get_knn_model_parallel(d[key],k)
+        if key == "nvb_mask":
+            t_model=get_naiveb_model_parallel(d[key],k)
+        if key == "svm_mask":
+            t_model=get_svm_model_parallel(d[key],k)
+        if key == "rf_mask":
+            t_model=get_rf_model_parallel(d[key],k)
+        if key == "xgb_mask":
+            t_model=get_xgb_model_parallel(d[key],k)
+        if key == "dt_mask":
+            t_model=get_dt_model_parallel(d[key],k)
+        t[key]=t_model
+        gen_vals[key]=gen_val.loc[:,model_mask]
+        m_test=get_means(d[key],t[key],k)
+        m_val=get_val_means(meta_val,gen_vals[key],t[key],k)
+        test_means[key]=m_test
+        val_means[key]=m_val
+        #Test best hierarch model
+        best_h=rank_report_linkage(gen[gen_model[key].columns], meta)
+        hierarchs[key]=best_h
+    res_df=df_generator(test_means,val_means,hierarchs)
 
-# %%
-#Function to run wrapped feature selection on non-tree algorithms (forward feature selection)
-fs_non_tree=fs_non_tree_models(meta_train,gen_train, n=30)
-# %%
-#Feature selection for non-tree models
-knn_mask=fs_non_tree["knn_mask"]
-nvb_mask=fs_non_tree["nvb_mask"]
-svm_mask=fs_non_tree["svm_mask"]
-# %%
-#Subsetting variants from the original gen_train
-gen_train_knn=gen_train.loc[:,knn_mask]
-gen_train_nvb=gen_train.loc[:,nvb_mask]
-gen_train_svm=gen_train.loc[:,svm_mask]
-
-# %%
-#Generating folds for each subseted data
-d_knn=split_fun(k,meta_train,gen_train_knn)
-d_nvb=split_fun(k,meta_train,gen_train_nvb)
-d_svm=split_fun(k,meta_train,gen_train_svm)
-
-# %%
-t_svm=get_svm_model_parallel(d_svm,5)
-t_nvb=get_naiveb_model_parallel(d_nvb,5)
-t_knn=get_knn_model_parallel(d_knn,5)
-# %%
-#Get means of the fited models throughout k-folds
-m_knn=get_means(d_knn,t_knn,k)
-m_nvb=get_means(d_nvb,t_nvb,k)
-m_svm=get_means(d_svm,t_svm,k)
-# %%
-print("knn","\n", m_knn)
-print("nvb","\n", m_nvb)
-print("svm","\n", m_svm)
-# %%
-#Now run with validation dataset
-gen_val_knn=gen_val.loc[:,knn_mask]
-gen_val_nvb=gen_val.loc[:,nvb_mask]
-gen_val_svm=gen_val.loc[:,svm_mask]
-
-# %%
-#Getting validation means
-m_val_knn=get_val_means(meta_val,gen_val_knn,t_knn,k)
-m_val_nvb=get_val_means(meta_val,gen_val_nvb,t_nvb,k)
-m_val_svm=get_val_means(meta_val,gen_val_svm,t_svm,k)
-
-# %%
-print("knn","\n", m_val_knn)
-print("nvb","\n", m_val_nvb)
-print("svm","\n", m_val_svm)
-
-# %%
-#Tree-based models
-fs_trees=fs_tree_models(meta_train,gen_train, n)
-# %%
-#Feature selection for tree models
-xgb_mask=fs_trees["xgb_mask"]
-dt_mask=fs_trees["dt_mask"]
-rf_mask=fs_trees["rf_mask"]
-# %%
-#Subsetting variants from the original gen_train
-gen_train_xgb=gen_train.loc[:,xgb_mask]
-gen_train_dt=gen_train.loc[:,dt_mask]
-gen_train_rf=gen_train.loc[:,rf_mask]
-
-# %%
-#Generating folds for each subseted data
-d_xgb=split_fun(k,meta_train,gen_train_xgb)
-d_dt=split_fun(k,meta_train,gen_train_dt)
-d_rf=split_fun(k,meta_train,gen_train_rf)
-
-# %%
-t_xgb=get_xgb_model_parallel(d_xgb,5)
-t_dt=get_dt_model_parallel(d_dt,5)
-t_rf=get_rf_model_parallel(d_rf,5)
-# %%
-#Get means of the fited models throughout k-folds
-m_xgb=get_means(d_xgb,t_xgb,k)
-m_dt=get_means(d_dt,t_dt,k)
-m_rf=get_means(d_rf,t_rf,k)
-
-# %%
-print("xgb","\n", m_xgb)
-print("dt","\n", m_dt)
-print("rf","\n", m_rf)
-
-# %%
-#Now run with validation dataset
-gen_val_xgb=gen_val.loc[:,xgb_mask]
-gen_val_dt=gen_val.loc[:,dt_mask]
-gen_val_rf=gen_val.loc[:,rf_mask]
-
-# %%
-#Getting validation means
-m_val_xgb=get_val_means(meta_val,gen_val_xgb,t_xgb,k)
-m_val_dt=get_val_means(meta_val,gen_val_dt,t_dt,k)
-m_val_rf=get_val_means(meta_val,gen_val_rf,t_rf,k)
-
-# %%
-print("xgb","\n", m_val_xgb)
-print("dt","\n", m_val_dt)
-print("rf","\n", m_val_rf)
-# %%
-d=split_fun(5, meta=meta_train, gen=gen_train)
-# %%
-t_knn=get_knn_model_parallel(d, 5)
-
-# %%
-t_nvb=get_naiveb_model_parallel(d,5)
-
-# %%
-t_svm=get_svm_model_parallel(d,5)
-
-# %%
-#Running with parallelization
-t_xgb=get_xgb_model_parallel(d, 5)
-
-# %%
-t_rf=get_rf_model_parallel(d,5)
-
-# %%
-t_dt=get_dt_model_parallel(d,5)
-
-# %%
-print("xgb","\n", get_means(d,t_xgb,k))
-print("dt", "\n",get_means(d,t_dt,k))
-print("rf", "\n",get_means(d,t_rf,k))
-print("nvb","\n",get_means(d,t_nvb,k))
-print("knn","\n",get_means(d,t_knn,k))
-print("svm","\n",get_means(d,t_svm,k))
 
 # %%
 get_cm(k,d,t_xgb,"xgb")
-
-# %%
-mask_10=get_forward_snps_parallel(gen,t_xgb,10,d,k)
-mask_15=get_forward_snps_parallel(gen,t_xgb,15,d,k)
-mask_20=get_forward_snps_parallel(gen,t_xgb,20,d,k)
 # %%
 importance_df=get_important_snps(gen,t_xgb,k)
 gen2=gen.loc[:, mask_10]

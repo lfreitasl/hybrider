@@ -300,7 +300,7 @@ if (!writecsvs){
   if (admixture){
     t_adm<-format_slist(val, str=F)
     if (!usepopinfo){
-      noloc_adm<-plotnoloc(t_adm, admixture = T, admbestk = F)
+      noloc_adm<-plotnoloc(t_adm, admixture = T, admbestk = T)
       exp_ks(noloc_adm,"ADMIXTURE")
     }
     if (usepopinfo){

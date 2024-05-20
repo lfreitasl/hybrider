@@ -47,6 +47,7 @@ process STRUCTURE {
     sed -E -i 's/#define ALPHA[[:space:]]*[0-9]+\\.[0-9]+/#define ALPHA ${alpha} /' ./extraparams
     sed -i 's/#define INFERLAMBDA[[:space:]]*[0-9]/#define INFERLAMBDA ${ifinferlambda}/' ./extraparams 
     sed -E -i 's/#define LAMBDA[[:space:]]*[0-9]+\\.[0-9]+/#define LAMBDA ${lambda} /' ./extraparams
+    sed -E -i 's/#define RANDOMIZE[[:space:]]*[0-9]+\\.[0-9]+/#define RANDOMIZE 1 /' ./extraparams
     sed -i 's/#define BURNIN[[:space:]]*[0-9]*\\(\\.[0-9]\\+\\)\\{0,1\\}/#define BURNIN ${burnin} /' ./mainparams
     sed -i 's/#define NUMREPS[[:space:]]*[0-9]*\\(\\.[0-9]\\+\\)\\{0,1\\}/#define NUMREPS ${mcmc} /' ./mainparams
     sed -i 's/#define NUMINDS[[:space:]]*[0-9]*\\(\\.[0-9]\\+\\)\\{0,1\\}/#define NUMINDS ${meta.n_inds} /' ./mainparams

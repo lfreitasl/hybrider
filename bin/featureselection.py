@@ -415,6 +415,46 @@ def df_generator(gen_dicts,meta,t,hierarchs=False):
         return sorted_hierarch
     else:
         return sorted
+    
+# %%
+def writing_fun(gen_all,meta,gen_selected,snp_info,test, val, hierarchs, name="output.txt"):
+    best_val=val.index[0]
+    best_hierarchical=hierarchs.index[0]
+    group_method=hierarchs.loc[best_hierarchical,"Best_grouping_Method"]
+    
+    snps_hierarch=gen_selected[best_hierarchical+'_mask'].columns
+    snps_val=gen_selected[best_val+'_mask'].columns
+
+    table_hierarch=snp_info[snp_info['ID'].isin(snps_hierarch)]
+    table_val=snp_info[snp_info['ID'].isin(snps_val)]
+
+    with open(name, 'w') as file:
+        file.write('Models metrics for testing sample set:\n')
+        file.write(test.to_string(index=True))
+        file.write('\n\n')  # Adding a couple of new lines for separation
+        file.write('Models metrics for validation sample set:\n')
+        file.write(val.to_string(index=True))
+        file.write('\n\n Best model: ' + best_val)
+        file.write('\n\n')
+        file.write('Set of selected variants by '+ best_val + ': \n')
+        file.write(table_val.to_string(index=False))
+        file.write('\n\n')
+        file.write('Model that returned best set of SNPs for hierarchical clustering: ' + best_hierarchical + '\n')
+        file.write(hierarchs.to_string(index=True))
+        file.write('\n\n')
+        file.write('Set of selected variants by ' + best_hierarchical + ': \n')
+        file.write(table_hierarch.to_string(index=False))
+        file.write('\n\n')
+        file.write('This file contains the performance metrics of different models.\n')
+        file.write('Each model was trained and tested across different folds.\n')
+        file.write('End of report.\n')
+
+    lut = dict(zip(meta.Classification_K2.unique(), ["#9a0200", "#db5856","#ffc0cb"]))
+    plot_matrix=gen_all[gen_selected[best_hierarchical+'_mask'].columns]
+    plot_h = sns.clustermap(plot_matrix, method=group_method,row_colors=meta.Classification_K2.map(lut))
+    plot_h.savefig((best_hierarchical +'_hcluster.jpg'), dpi=400)
+    plot_h.savefig((best_hierarchical +'_hcluster.svg'), dpi=400)
+
 # %% [markdown]
 #Running code from the functions above
 # %%
@@ -430,9 +470,7 @@ gen
 # %%
 #Snp info dataframe
 snp_info=pd.read_csv('../results/ML/filt_biallelic_filtered.snpinfo.csv')
-snp_info.drop(['REF','ALT','Alf1','Alf2'], axis=1, inplace=True)
-snp_info.rename(columns={'CHROMOSSOME': 'CHROM','LOC':'ID'}, inplace=True)
-snp_info
+
 # %%
 #Number of folds
 k=5
@@ -450,7 +488,10 @@ p=0.05
 r=0.8
 
 # %%
-def snp_selector (meta, gen, k, p, r, n):
+def snp_selector (meta, gen, snp_info, k, p, r, n):
+    #Parsing snp_info
+    snp_info.drop(['REF','ALT','Alf1','Alf2'], axis=1, inplace=True)
+    snp_info.rename(columns={'CHROMOSSOME': 'CHROM','LOC':'ID'}, inplace=True)
     #Creating partitioned data
     split=split_train_test(meta, gen)
     #Validation set
@@ -504,29 +545,11 @@ def snp_selector (meta, gen, k, p, r, n):
         #Test best hierarch model
         best_h=rank_report_linkage(gen[gen_model[key].columns], meta)
         hierarchs[key]=best_h
-    res_df=df_generator(gen_vals,meta_val,t,hierarchs)
-    res_df.index = res_df.index.str.replace('_mask', '')
-    return res_df
-
-# %%
-def writing_fun(test, val, hierarchs, name="output.txt"):
-    best_val=val.index[0]
-    best_hierarchical=hierarchs.index[0]
-    with open(name, 'w') as file:
-        file.write('Models metrics for testing sample set:\n')
-        file.write(test.to_string(index=True))
-        file.write('\n\n')  # Adding a couple of new lines for separation
-        file.write('Models metrics for validation sample set:\n')
-        file.write(val.to_string(index=True))
-        file.write('\n Best model: ' + best_val)
-        file.write('\n\n')
-        file.write('Model that returned best set of SNPs for hierarchical clustering: ' + best_hierarchical + '\n')
-        file.write(hierarchs.to_string(index=True))
-        file.write('\n\n')
-        file.write('This file contains the performance metrics of different models.\n')
-        file.write('Each model was trained and tested across different folds.\n')
-        file.write('End of report.\n')
-
+    test_df=df_generator(gen_model,meta_train,t)
+    val_df=df_generator(gen_vals,meta_val,t)
+    hierarchs_df=df_generator(gen_vals,meta_val,t, hierarchs)
+    
+    writing_fun(gen,meta,gen_model,snp_info,test_df,val_df,hierarchs_df, name="SNP_selector_report.txt")
 # %%
 get_cm(k,d,t_xgb,"xgb")
 # %%

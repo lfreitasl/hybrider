@@ -2,6 +2,7 @@
 #Script for machine learning step
 # %%
 from scipy.cluster.hierarchy import dendrogram, linkage, fcluster #using
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, matthews_corrcoef #using
 from sklearn import tree
 from sklearn.model_selection import train_test_split #using
 from sklearn.feature_selection import SelectFromModel #Using
@@ -242,60 +243,19 @@ def save_image(filename):
 # %%
 def get_cm(k,dicts,models,outname):
     files=np.asarray(list(dicts.keys()))
+    d_cm={}
     for i in range(1,k+1):
         files_in_fold=files[np.char.endswith(files,format(i))]
         test_in_fold=files_in_fold[np.char.startswith(files_in_fold,"test")]
     # print(list(t_xgb.values())[i-1].score(d[test_in_fold[0]],d[test_in_fold[1]]))
         predictions = list(models.values())[i-1].predict(dicts[test_in_fold[0]])
         cm = confusion_matrix(dicts[test_in_fold[1]], predictions, labels=list(models.values())[i-1].classes_)
-        disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=list(models.values())[i-1].classes_)
-        disp.plot()
-    save_image((outname + ".pdf"))
+    #     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=list(models.values())[i-1].classes_)
+    #     disp.plot()
+    # save_image((outname + ".pdf"))
+        d_cm[list(models.keys()[i-1])]=cm
+    return d_cm
 
-# %%
-def get_means(dicts,models, k):
-    inlist=list(models.keys())
-    folds=list(dicts.keys())
-    folds_test=[elem for elem in folds if elem.startswith('test_')]
-    folds_train=[elem for elem in inlist if elem.startswith('train_')]
-    acc=[]
-    for i in range(1,k+1):
-        names=[elem for elem in folds_test if elem.endswith(format(i))]
-        model=models[folds_train[i-1]]
-        sc=model.score(dicts[names[0]],dicts[names[1]])
-        acc.append(sc)
-    mean=[np.mean(acc)]
-    sd=[np.std(acc)]
-    df=pd.DataFrame({'Mean':mean,'SD':sd})
-    return df
-# %%
-#get validation means
-def get_val_means(meta,gen,models,k):
-    inlist=list(models.keys())
-    classes=meta.iloc[:,-1].values
-    classes=LabelEncoder().fit_transform(classes)
-    acc=[]
-    for i in range(1,k+1):
-        model=models[inlist[i-1]]
-        sc=model.score(gen.values,classes)
-        acc.append(sc)
-    mean=[np.mean(acc)]
-    sd=[np.std(acc)]
-    df=pd.DataFrame({'Mean':mean,'SD':sd})
-    return df
-# %%
-#This is for treebased algorithms
-def get_important_snps(gen,models,k):
-    d={}
-    for i in range(1,k+1):
-        importants=list(models.values())[i-1].feature_importances_
-        snpnames=gen.columns
-        df=pd.DataFrame({'Feature':snpnames,'Importance':importants}).sort_values('Feature', ascending=False)
-        d[("fold_"+format(i))]=df
-    concatenated_df=pd.concat(d.values())
-    grouped_df=concatenated_df.groupby('Feature')['Importance'].agg(['mean', 'std']).reset_index()
-    grouped_df.columns=['Feature', 'Importance', 'SD_folds']
-    return grouped_df
 # %%
 #This is for treebased algorithms
 def get_important_snps(estimator,meta,gen,n=None):
@@ -412,50 +372,49 @@ def remove_col_f(df, threshold):
     return df
 
 # %%
-#Function to process dicitonaries generated inside snp_selector function
-def df_generator(test_means,val_means,hierarchs):
-    test_dfs = []
-    validation_dfs = []
-    grouping_dfs = []
+#Test substitue for val_means, get_means and df_generator
+def df_generator(gen_dicts,meta,t,hierarchs=False):
+    mt=LabelEncoder().fit_transform(np.array(meta.iloc[:,-1]))
+    metrics_list=[]
 
-    for key in test_means:
-        test_df = test_means[key].copy()
-        test_df['Model'] = key
-        test_dfs.append(test_df)
-        
-        validation_df = val_means[key].copy()
-        validation_df['Model'] = key
-        validation_dfs.append(validation_df)
-        
-        grouping_df = hierarchs[key].copy()
-        grouping_df['Model'] = key
-        grouping_dfs.append(grouping_df)
-
-    # Concatenate the DataFrames
-    test_combined_df = pd.concat(test_dfs)
-    validation_combined_df = pd.concat(validation_dfs)
-    grouping_combined_df = pd.concat(grouping_dfs)
-
-    # Set the Model as the index
-    test_combined_df.set_index('Model', inplace=True)
-    validation_combined_df.set_index('Model', inplace=True)
-    grouping_combined_df.set_index('Model', inplace=True)
-
-    # Rename columns for clarity
-    test_combined_df.columns = ['Test_Mean', 'Test_SD']
-    validation_combined_df.columns = ['Validation_Mean', 'Validation_SD']
-
-    # Combine all DataFrames into one
-    combined_df = pd.concat([test_combined_df, validation_combined_df, grouping_combined_df], axis=1)
-
-    # Create a new columns to display best model based on mean of validation accuracy and RI:
-    combined_df['Rank'] = combined_df[['Validation_Mean', 'Rand_Index']].mean(axis=1)
+    for models, folds in t.items():
+        for fold, model in folds.items():
+            val_t=gen_dicts[models]
+            pred=model.predict(val_t)
+            accuracy = accuracy_score(mt, pred)
+            precision = precision_score(mt, pred, average='macro')  # 'macro' averages the precision of each class
+            recall = recall_score(mt, pred, average='macro')        # 'macro' averages the recall of each class
+            f1 = f1_score(mt, pred, average='macro')                # 'macro' averages the f1 score of each class
+            mcc = matthews_corrcoef(mt, pred)
+            metrics_dict = {
+                'Model': models,
+                'Fold': fold,
+                'Accuracy': accuracy,
+                'Precision': precision,
+                'Recall': recall,
+                'F1 Score': f1,
+                'MCC': mcc
+            }
+            metrics_list.append(metrics_dict)
     
-    # Sort to report
-    combined_df = combined_df.sort_values(by='Rank', ascending=False)
-
-    # Return the resulting DataFrame
-    return combined_df
+    metrics_df=pd.DataFrame(metrics_list)
+    mean_metrics_df = metrics_df.groupby('Model').mean(numeric_only=True).reset_index()
+    mean_metrics_df.set_index('Model',inplace=True)
+    sorted = mean_metrics_df.sort_values(by='Accuracy', ascending=False)
+    sorted.index = sorted.index.str.replace('_mask', '')
+    if hierarchs:
+        grouping_dfs = []
+        for key in hierarchs:
+            grouping_df = hierarchs[key].copy()
+            grouping_df['Model'] = key
+            grouping_dfs.append(grouping_df)
+        grouping_combined_df = pd.concat(grouping_dfs)
+        grouping_combined_df.set_index('Model', inplace=True)
+        sorted_hierarch=grouping_combined_df.sort_values(by='Rand_Index', ascending=False)
+        sorted_hierarch.index= sorted_hierarch.index.str.replace('_mask', '')
+        return sorted_hierarch
+    else:
+        return sorted
 # %% [markdown]
 #Running code from the functions above
 # %%
@@ -468,6 +427,12 @@ meta
 gen=pd.read_csv("../results/ML/filt_biallelic_filtered.genotype.csv", index_col=0)
 gen
 
+# %%
+#Snp info dataframe
+snp_info=pd.read_csv('../results/ML/filt_biallelic_filtered.snpinfo.csv')
+snp_info.drop(['REF','ALT','Alf1','Alf2'], axis=1, inplace=True)
+snp_info.rename(columns={'CHROMOSSOME': 'CHROM','LOC':'ID'}, inplace=True)
+snp_info
 # %%
 #Number of folds
 k=5
@@ -516,8 +481,6 @@ def snp_selector (meta, gen, k, p, r, n):
     t={} #Store fitted models
     gen_model={} #Store train dataframes for each selected feature
     gen_vals={} #Store validation for each set of selected features
-    test_means={} #Store mean for fold models accuracy on test datasets
-    val_means={} #Store mean for fold models accuracy on valdiation dataset
     hierarchs={} #Store best hierarch cluster model for each set of model best set of snps
     for key in models_mask:
         model_mask=models_mask[key]
@@ -538,15 +501,31 @@ def snp_selector (meta, gen, k, p, r, n):
             t_model=get_dt_model_parallel(d[key],k)
         t[key]=t_model
         gen_vals[key]=gen_val.loc[:,model_mask]
-        m_test=get_means(d[key],t[key],k)
-        m_val=get_val_means(meta_val,gen_vals[key],t[key],k)
-        test_means[key]=m_test
-        val_means[key]=m_val
         #Test best hierarch model
         best_h=rank_report_linkage(gen[gen_model[key].columns], meta)
         hierarchs[key]=best_h
-    res_df=df_generator(test_means,val_means,hierarchs)
+    res_df=df_generator(gen_vals,meta_val,t,hierarchs)
+    res_df.index = res_df.index.str.replace('_mask', '')
+    return res_df
 
+# %%
+def writing_fun(test, val, hierarchs, name="output.txt"):
+    best_val=val.index[0]
+    best_hierarchical=hierarchs.index[0]
+    with open(name, 'w') as file:
+        file.write('Models metrics for testing sample set:\n')
+        file.write(test.to_string(index=True))
+        file.write('\n\n')  # Adding a couple of new lines for separation
+        file.write('Models metrics for validation sample set:\n')
+        file.write(val.to_string(index=True))
+        file.write('\n Best model: ' + best_val)
+        file.write('\n\n')
+        file.write('Model that returned best set of SNPs for hierarchical clustering: ' + best_hierarchical + '\n')
+        file.write(hierarchs.to_string(index=True))
+        file.write('\n\n')
+        file.write('This file contains the performance metrics of different models.\n')
+        file.write('Each model was trained and tested across different folds.\n')
+        file.write('End of report.\n')
 
 # %%
 get_cm(k,d,t_xgb,"xgb")

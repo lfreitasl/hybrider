@@ -9,6 +9,7 @@ process STRUCTURE {
 
     input:
     tuple val(meta), path(sampmeta), path(str), val(k_value), val(rep_per_k)
+    val seed
     val noadmix 
     val freqscorr
     val inferalpha
@@ -47,7 +48,6 @@ process STRUCTURE {
     sed -E -i 's/#define ALPHA[[:space:]]*[0-9]+\\.[0-9]+/#define ALPHA ${alpha} /' ./extraparams
     sed -i 's/#define INFERLAMBDA[[:space:]]*[0-9]/#define INFERLAMBDA ${ifinferlambda}/' ./extraparams 
     sed -E -i 's/#define LAMBDA[[:space:]]*[0-9]+\\.[0-9]+/#define LAMBDA ${lambda} /' ./extraparams
-    sed -E -i 's/#define RANDOMIZE[[:space:]]*[0-9]+\\.[0-9]+/#define RANDOMIZE 1 /' ./extraparams
     sed -i 's/#define BURNIN[[:space:]]*[0-9]*\\(\\.[0-9]\\+\\)\\{0,1\\}/#define BURNIN ${burnin} /' ./mainparams
     sed -i 's/#define NUMREPS[[:space:]]*[0-9]*\\(\\.[0-9]\\+\\)\\{0,1\\}/#define NUMREPS ${mcmc} /' ./mainparams
     sed -i 's/#define NUMINDS[[:space:]]*[0-9]*\\(\\.[0-9]\\+\\)\\{0,1\\}/#define NUMINDS ${meta.n_inds} /' ./mainparams
@@ -63,7 +63,8 @@ process STRUCTURE {
         -t $task.cpus \\
         -st /bin/structure \\
         --no_tests true \\
-        --no_plots true
+        --no_plots true \\
+        --seed $seed
 
     $rename_f
     $rename_q 

@@ -553,14 +553,4 @@ def snp_selector (meta, gen, snp_info, k, p, r, n):
 # %%
 get_cm(k,d,t_xgb,"xgb")
 # %%
-importance_df=get_important_snps(gen,t_xgb,k)
-gen2=gen.loc[:, mask_10]
-d2=split_fun(5, meta=meta, gen=gen2)
-t_xgb2=get_xgb_model_parallel(d2, 5)
-get_means(d2,t_xgb2,k)
-importance_df[importance_df['Feature'].isin(gen2.columns)]
-# %%
-#Mapeamento para plot:
-lut = dict(zip(meta.Classification_K2.unique(), ["#9a0200", "#db5856","#ffc0cb"]))
-# %%
-g_train = sns.clustermap(DUMMIE, method="ward",row_colors=meta.Classification_K2.map(lut))
+snp_selector(meta,gen,snp_info,k,p,r,n)

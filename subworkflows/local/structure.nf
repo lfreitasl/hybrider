@@ -25,17 +25,21 @@ workflow RUN_STRUCTURE {
     ch_rep_per_k    = Channel.empty()
     ch_versions     = Channel.empty()
     ch_str_in       = Channel.empty()
+    ch_seed         = Channel.empty()
     ch_ffiles       = Channel.empty()
     ch_qfiles       = Channel.empty()
     ch_versions     = Channel.empty()
+    
     
     ch_str          = ch_str.mix(str)
     ch_kvalue       = ch_kvalue.mix(Channel.from(1..k_value))
     ch_rep_per_k    = ch_rep_per_k.mix(Channel.from(1..rep_per_k))
     ch_str_in       = ch_str_in.mix(ch_str.combine(ch_kvalue).combine(ch_rep_per_k))
+    ch_seed         = Channel.of(1..5000).randomSample(k_value * rep_per_k)
 
     STRUCTURE(
         ch_str_in,
+        ch_seed,
         noadmix,
         freqscorr,
         inferalpha,

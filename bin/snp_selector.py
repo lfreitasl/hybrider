@@ -1,7 +1,8 @@
+#!/usr/bin/env python
 # %%
 #Script for machine learning step
 # %%
-from scipy.cluster.hierarchy import dendrogram, linkage, fcluster #using
+from scipy.cluster.hierarchy import linkage, fcluster #using
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, matthews_corrcoef #using
 from sklearn import tree
 from sklearn.model_selection import train_test_split #using
@@ -24,6 +25,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import argparse
 # %%
 #Split validation set
 def split_train_test(meta,gen):
@@ -455,38 +457,6 @@ def writing_fun(gen_all,meta,gen_selected,snp_info,test, val, hierarchs, name="o
     plot_h.savefig((best_hierarchical +'_hcluster.jpg'), dpi=400)
     plot_h.savefig((best_hierarchical +'_hcluster.svg'), dpi=400)
 
-# %% [markdown]
-#Running code from the functions above
-# %%
-#Metadata
-meta=pd.read_csv("../results/ML/filt_biallelic_filtered_classified_meta_K2.csv", index_col=0)
-meta
-
-# %%
-#Genotype data
-gen=pd.read_csv("../results/ML/filt_biallelic_filtered.genotype.csv", index_col=0)
-gen
-
-# %%
-#Snp info dataframe
-snp_info=pd.read_csv('../results/ML/filt_biallelic_filtered.snpinfo.csv')
-
-# %%
-#Number of folds
-k=5
-
-# %%
-#Number of snps to select
-n=30
-
-# %%
-#P_value for chi2 test for univariate feature selection
-p=0.05
-
-# %%
-#r² value for among variables correlation filtering.
-r=0.8
-
 # %%
 def snp_selector (meta, gen, snp_info, k, p, r, n):
     #Parsing snp_info
@@ -549,8 +519,27 @@ def snp_selector (meta, gen, snp_info, k, p, r, n):
     val_df=df_generator(gen_vals,meta_val,t)
     hierarchs_df=df_generator(gen_vals,meta_val,t, hierarchs)
     
-    writing_fun(gen,meta,gen_model,snp_info,test_df,val_df,hierarchs_df, name="SNP_selector_report.txt")
+    writing_fun(gen,meta,gen_model,snp_info,test_df,val_df,hierarchs_df, name=("SNP_selector_report_"+str(n)+".txt"))
+
 # %%
-get_cm(k,d,t_xgb,"xgb")
+#Main function
+def main():
+    parser = argparse.ArgumentParser(description='RNAmining: a deep learning stand-alone and web server tool for sequences coding prediction and RNA functional assignation')
+    parser.add_argument('-g','--genotype', help='The filename with the genotype file', required=True)
+    parser.add_argument('-m','--metadata', help='The file with metadata information.', required=True)
+    parser.add_argument('-i','--snp_info', help='File with each SNP information (Chromossome, position and ID)', required=True)
+    parser.add_argument('-k','--k_fold', help='Number of folds to run crossvalidation on the dataset. Default=5')
+    parser.add_argument('-p','--p_value', help='Number of p_value threshold for initial dimentionality reduction with chi2 test. Default=0.05')
+    parser.add_argument('-r','--corr', help='Number of r2 threshold for initial dimentionality reduction removing highly correlated genotypes. Default=0.8')
+    parser.add_argument('-n', '--n_snps', help='Number of SNPs for algorithm selection. The higher this number the longer is gonna take. Default=auto')
+    args = vars(parser.parse_args())
+    meta=pd.read_csv(args['metadata'], index_col=0)
+    gen=pd.read_csv(args['genotype'], index_col=0)
+    snp_info=pd.read_csv(args['snp_info'])
+
+    snp_selector(meta,gen,snp_info,args['k_fold'],args['p_value'],args['corr'],args['n_snps'])
+    
 # %%
-snp_selector(meta,gen,snp_info,k,p,r,n)
+#Run script
+if __name__ == "__main__":
+    main()

@@ -8,6 +8,7 @@ include { FASTQC                 } from '../modules/nf-core/fastqc/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
 include { ADMIXTURE              } from '../modules/local/admixture/main'
 include { PREPARE_ML             } from '../modules/local/prepare_ml/main'
+include { SNP_SELECTOR           } from '../modules/local/snp_selector/main'
 include { paramsSummaryMap       } from 'plugin/nf-validation'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
@@ -118,6 +119,17 @@ workflow HYBRIDER {
     )
 
     ch_versions = ch_versions.mix(PREPARE_ML.out.versions.first())
+
+    SNP_SELECTOR(
+        PREPARE_ML.out.genotype,
+        PREPARE_ML.out.sampmeta,
+        PREPARE_ML.out.snpmeta,
+        params.kfold,
+        params.pvalue,
+        params.corr,
+        params.nsnps
+    )
+
 
 // }
 

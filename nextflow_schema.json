@@ -355,31 +355,66 @@
                 },
                 "inferbyclust": {
                     "type": "boolean",
-                    "default": true
+                    "default": true,
+                    "description": "Do you wish to infer species by Q values?"
                 },
                 "smaller": {
                     "type": "boolean",
-                    "default": true
+                    "default": true,
+                    "description": "Do you wish to use smaller group to get allele frequency from"
                 },
                 "method": {
                     "type": "string",
-                    "default": "mean"
+                    "default": "mean",
+                    "description": "Either mean, str or admix to get ancestry coefficients from"
                 },
                 "upper": {
                     "type": "number",
-                    "default": 0.9
+                    "default": 0.9,
+                    "description": "Upper limit of Q value to define a putative species"
                 },
                 "lower": {
                     "type": "number",
-                    "default": 0.1
+                    "default": 0.1,
+                    "description": "Lower limit of Q value to define a putative species"
                 },
                 "rminvariable": {
                     "type": "boolean",
-                    "default": true
+                    "default": true,
+                    "description": "Do you wish to remove invariable genotypes from the final matrix?"
                 },
                 "dropna": {
                     "type": "boolean",
-                    "default": true
+                    "default": true,
+                    "description": "Do you wish to drop all columns that contains any NA value?"
+                }
+            }
+        },
+        "ml_step": {
+            "title": "ML step",
+            "type": "object",
+            "description": "Step for selecting most important SNPs for classification of samples",
+            "default": "",
+            "properties": {
+                "kfold": {
+                    "type": "integer",
+                    "default": 5,
+                    "description": "N folds to perform cross-validation"
+                },
+                "pvalue": {
+                    "type": "number",
+                    "default": 0.05,
+                    "description": "P-value threshold for initial dimensionality reduction with chi2 test"
+                },
+                "corr": {
+                    "type": "number",
+                    "default": 0.8,
+                    "description": "Value of r\u00b2 threshold to filter variables highly correlated with each other, this will filter everything greater than threshold."
+                },
+                "nsnps": {
+                    "type": "integer",
+                    "default": 30,
+                    "description": "Number of SNPs to select."
                 }
             }
         }
@@ -408,6 +443,9 @@
         },
         {
             "$ref": "#/definitions/machine_learning_params"
+        },
+        {
+            "$ref": "#/definitions/ml_step"
         }
     ]
 }

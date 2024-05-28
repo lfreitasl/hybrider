@@ -1,0 +1,11 @@
+name: vcfprocess
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - scipy
+  - sklearn
+  - xgboost
+  - matplotlib
+  - seaborn

@@ -1,5 +1,5 @@
 process SNP_SELECTOR {
-    //tag "$vcf.baseName" //TODO
+    tag "$name"
     label 'process_high'
 
     conda "${moduleDir}/environment.yml"
@@ -8,9 +8,9 @@ process SNP_SELECTOR {
         'docker.io/lfreitasl/lalgorithms:latest' }"
 
     input:
-    path gen
-    path meta
-    path snpinfo
+    tuple val(name), path(gen)
+    tuple val(name), path(meta)
+    tuple val(name), path(snpinfo)
     val kfold
     val pvalue
     val corr

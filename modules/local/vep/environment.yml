@@ -4,6 +4,4 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - bioconda::r-dartr=2.9.7
-  - bioconda::r-vcfr=1.8.0
-  - conda-forge::r-base=4.3.3
+  - bioconda::ensembl-vep=112.0

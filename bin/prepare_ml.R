@@ -110,29 +110,35 @@ genotypes <- function(matriz, df_information, vcfp) {
 
 # Define function that will return metadata with inferred species based on Q values:
 infer_species <- function(samp_meta, method, upper, lower) {
-  if (sum(startsWith(colnames(samp_meta), "ADMIX")) != 2) {
+  upthresh <- upper
+  lowthresh <- lower
+  if (method == "mean") {
+    if (sum(startsWith(colnames(samp_meta), "ADMIX")) != 2) {
     stop("The information for ancestry must be provided for K=2 only")
   }
   for (i in 1:2) {
-    upthresh <- upper
-    lowthresh <- lower
     str <- paste("ADMIX_Cluster", i, sep = "")
     adm <- paste("STR_Cluster", i, sep = "")
     both <- c(str, adm)
     meanName <- paste("MEAN_Cluster", i, sep = "")
     samp_meta[meanName] <- rowMeans(samp_meta[, both])
   }
-  if (method == "mean") {
     samp_meta[samp_meta$MEAN_Cluster1 >= upthresh, "Classification_K2"] <- "Sp1"
     samp_meta[samp_meta$MEAN_Cluster1 <= lowthresh, "Classification_K2"] <- "Sp2"
     samp_meta[samp_meta$MEAN_Cluster1 > lowthresh & samp_meta$MEAN_Cluster1 < upthresh, "Classification_K2"] <- "Hyb"
   }
   if (method == "str") {
+    if (sum(startsWith(colnames(samp_meta), "STR")) != 2) {
+    stop("The information for ancestry must be provided for K=2 only")
+    }
     samp_meta[samp_meta$STR_Cluster1 >= upthresh, "Classification_K2"] <- "Sp1"
     samp_meta[samp_meta$STR_Cluster1 <= lowthresh, "Classification_K2"] <- "Sp2"
     samp_meta[samp_meta$STR_Cluster1 > lowthresh & samp_meta$STR_Cluster1 < upthresh, "Classification_K2"] <- "Hyb"
   }
   if (method == "admix") {
+    if (sum(startsWith(colnames(samp_meta), "ADMIX")) != 2) {
+    stop("The information for ancestry must be provided for K=2 only")
+    }
     samp_meta[samp_meta$ADMIX_Cluster1 >= upthresh, "Classification_K2"] <- "Sp1"
     samp_meta[samp_meta$ADMIX_Cluster1 <= lowthresh, "Classification_K2"] <- "Sp2"
     samp_meta[samp_meta$ADMIX_Cluster1 > lowthresh & samp_meta$ADMIX_Cluster1 < upthresh, "Classification_K2"] <- "Hyb"

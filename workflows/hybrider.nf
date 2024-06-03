@@ -9,6 +9,7 @@ include { MULTIQC                } from '../modules/nf-core/multiqc/main'
 include { ADMIXTURE              } from '../modules/local/admixture/main'
 include { PREPARE_ML             } from '../modules/local/prepare_ml/main'
 include { SNP_SELECTOR           } from '../modules/local/snp_selector/main'
+include { VEP                    } from '../modules/local/vep/main'
 include { paramsSummaryMap       } from 'plugin/nf-validation'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
@@ -48,6 +49,11 @@ workflow HYBRIDER {
     ch_kvalue        = Channel.empty()
     ch_vcf           = Channel.empty()
     ch_k2            = Channel.empty()
+    ch_reference     = Channel.empty()
+    ch_gff           = Channel.empty()
+
+    ch_reference     = ch_reference.mix(Channel.fromPath(params.reference))
+    ch_gff           = ch_gff.mix(Channel.fromPath(params.gff))
 
     //
     // MODULE: Run FastQC
@@ -66,6 +72,8 @@ workflow HYBRIDER {
     ch_vcf      = ch_vcf.mix(FILT_CONVERTER.out.vcf)
     ch_versions = ch_versions.mix(FILT_CONVERTER.out.versions.first())
 
+    if (!params.skip_str){
+
     RUN_STRUCTURE(
         ch_str_in,
         params.noadmix,
@@ -83,7 +91,9 @@ workflow HYBRIDER {
 
     ch_ffiles = RUN_STRUCTURE.out.ffiles.groupTuple().map{meta,sampmeta,ffiles->return [meta,sampmeta[0][1],ffiles[0]]}
     ch_versions = ch_versions.mix(RUN_STRUCTURE.out.versions.first())
+    }
 
+    if (!params.skip_admix){
     ch_kvalue   = ch_kvalue.mix(Channel.from(1..params.k_value))
     ch_admix_in = ch_admix_in.combine(ch_kvalue)
 
@@ -93,17 +103,27 @@ workflow HYBRIDER {
     ch_admix_out_Q=ADMIXTURE.out.ancestry_fractions.groupTuple()
     ch_admix_out_log=ADMIXTURE.out.cross_validation.groupTuple().map{meta,sampmeta,file -> return [meta, file]}
 
-    ch_admix_test=ch_admix_out_Q.combine(ch_admix_out_log, by:0).map{meta,sampmeta,q,log->return [meta,q,log]}
+    ch_admix_final=ch_admix_out_Q.combine(ch_admix_out_log, by:0).map{meta,sampmeta,q,log->return [meta,q,log]}
+    }
 
-    ch_plotq_in=ch_ffiles.combine(ch_admix_test,by:0)
-
+    if (!params.skip_str && !params.skip_admix){
+        ch_plotq_in=ch_ffiles.combine(ch_admix_final,by:0)
+    }
+    if (!params.skip_str && params.skip_admix){
+        ch_plotq_in=ch_ffiles.map{meta,sampmeta,ffiles -> return [meta,sampmeta,ffiles,[],[]]}
+    }
+    if (params.skip_str && !params.skip_admix) {
+        ch_plotq_in=ch_admix_out_Q.combine(ch_admix_out_log, by:0).map{meta,sampmeta,q,log->return [meta,sampmeta[0],[],q,log]}
+    }
+    
+    if (!params.skip_plot){
     PLOT_SELECTED(ch_plotq_in, params.writecsv, params.plot_str, params.plot_admix)
 
     ch_k2       = ch_k2.mix(PLOT_SELECTED.out.meta)
     ch_versions = ch_versions.mix(PLOT_SELECTED.out.versions.first())
+    }
 
-
-
+    if (!params.skip_ml){
     PREPARE_ML(
         ch_vcf,
         ch_k2,
@@ -129,7 +149,15 @@ workflow HYBRIDER {
         params.corr,
         params.nsnps
     )
+    }
 
+    if (!params.skip_vep){
+    VEP(
+        ch_vcf,
+        ch_gff,
+        ch_reference
+    )
+    }
 
 // }
 

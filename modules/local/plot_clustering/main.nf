@@ -17,7 +17,7 @@ process PLOT_CLUSTERING {
 
     output:
     tuple path('*.pdf'), path("*.svg")              , optional: true, emit: graphs
-    tuple val(meta), path("meta_str_admix_K2.csv")  , optional: true, emit: meta
+    tuple val(meta), path("*K2.csv")                , optional: true, emit: meta
     path "versions.yml"                             , emit: versions
 
     when:

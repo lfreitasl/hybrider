@@ -33,7 +33,7 @@ process SNP_SELECTOR {
     snp_selector.py \\
         --genotype $gen \\
         --metadata $meta \\
-        --snpinfo $snpinfo \\
+        --snp_info $snpinfo \\
         --k_fold $kfold \\
         --p_value $pvalue \\
         --corr $corr \\

@@ -46,6 +46,16 @@
                     "type": "string",
                     "description": "MultiQC report title. Printed as page header, used for filename if not otherwise specified.",
                     "fa_icon": "fas fa-file-signature"
+                },
+                "reference": {
+                    "type": "string",
+                    "default": "/storages/caico/home/lucas.freitas/Mestrado_Files/GSC_monkey_1.0/GCF_009761245.1_GSC_monkey_1.0/GCF_009761245.1_GSC_monkey_1.0_genomic.fna",
+                    "description": "Fasta reference genome used to call variants"
+                },
+                "gff": {
+                    "type": "string",
+                    "default": "/storages/caico/home/lucas.freitas/Mestrado_Files/GSC_monkey_1.0/GCF_009761245.1_GSC_monkey_1.0/GCF_009761245.1_GSC_monkey_1.0_genomic.gff",
+                    "description": "Annotation gff file from the reference"
                 }
             }
         },
@@ -243,6 +253,29 @@
                 }
             }
         },
+        "skips": {
+            "title": "Skips",
+            "type": "object",
+            "description": "Which analsysis should you like to skip?",
+            "default": "",
+            "properties": {
+                "skip_str": {
+                    "type": "boolean"
+                },
+                "skip_admix": {
+                    "type": "boolean"
+                },
+                "skip_plot": {
+                    "type": "boolean"
+                },
+                "skip_ml": {
+                    "type": "boolean"
+                },
+                "skip_vep": {
+                    "type": "boolean"
+                }
+            }
+        },
         "dartr_module_for_filtering": {
             "title": "DartR module for filtering",
             "type": "object",
@@ -431,6 +464,9 @@
         },
         {
             "$ref": "#/definitions/generic_options"
+        },
+        {
+            "$ref": "#/definitions/skips"
         },
         {
             "$ref": "#/definitions/dartr_module_for_filtering"

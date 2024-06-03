@@ -1,0 +1,7 @@
+name: vcfprocess
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bioconda::ensembl-vep=112.0

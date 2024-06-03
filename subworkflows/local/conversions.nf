@@ -36,6 +36,8 @@ workflow FILT_CONVERTER {
     ch_admx     = ch_admx.mix(ch_bed.combine(ch_bim, by: 0).combine(ch_fam,by: 0))
     ch_versions = ch_versions.mix(FILTER_VCF.out.versions.first().ifEmpty(null))
 
+    if (!params.skip_str){
+
     META_VCF(ch_vcf, ch_str)
 
     ch_vcf_meta = ch_vcf_meta.mix(META_VCF.out.vcf_meta.ifEmpty([]))
@@ -48,7 +50,7 @@ workflow FILT_CONVERTER {
         return [create_csv_channel(meta[0]), sampmeta, vcfs]
     }
     .set { ch_vcf_meta }
-
+    }
 
 
     emit:

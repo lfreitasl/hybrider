@@ -1,5 +1,3 @@
-<!--# ![nf-core/hybrider](docs/images/nf-core-hybrider_logo_light.png#gh-light-mode-only) ![nf-core/hybrider](docs/images/nf-core-hybrider_logo_dark.png#gh-dark-mode-only) -->
-
 [![GitHub Actions CI Status](https://github.com/nf-core/hybrider/workflows/nf-core%20CI/badge.svg)](https://github.com/nf-core/hybrider/actions?query=workflow%3A%22nf-core+CI%22)
 [![GitHub Actions Linting Status](https://github.com/nf-core/hybrider/workflows/nf-core%20linting/badge.svg)](https://github.com/nf-core/hybrider/actions?query=workflow%3A%22nf-core+linting%22)<!--[![AWS CI](https://img.shields.io/badge/CI%20tests-full%20size-FF9900?labelColor=000000&logo=Amazon%20AWS)](https://nf-co.re/hybrider/results)[![Cite with Zenodo](http://img.shields.io/badge/DOI-10.5281/zenodo.XXXXXXX-1073c8?labelColor=000000)](https://doi.org/10.5281/zenodo.XXXXXXX)-->
 
@@ -7,6 +5,8 @@
 [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/)
 [![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)
 [![Launch on Nextflow Tower](https://img.shields.io/badge/Launch%20%F0%9F%9A%80-Nextflow%20Tower-%234256e7)](https://tower.nf/launch?pipeline=https://github.com/lfreitasl/hybrider)
+
+# ![lfreitasl/hybrider](docs/images/hybrider_logo.png)
 
 <!--[![Get help on Slack](http://img.shields.io/badge/slack-nf--core%20%23hybrider-4A154B?labelColor=000000&logo=slack)](https://nfcore.slack.com/channels/hybrider)[![Follow on Twitter](http://img.shields.io/badge/twitter-%40nf__core-1DA1F2?labelColor=000000&logo=twitter)](https://twitter.com/nf_core)[![Follow on Mastodon](https://img.shields.io/badge/mastodon-nf__core-6364ff?labelColor=FFFFFF&logo=mastodon)](https://mstdn.science/@nf_core)[![Watch on YouTube](http://img.shields.io/badge/youtube-nf--core-FF0000?labelColor=000000&logo=youtube)](https://www.youtube.com/c/nf-core) -->
 
@@ -31,6 +31,9 @@
 5. When running with two putatively hybridizing species, it compares results of STRUCTURE and ADMIXTURE to label samples as hybrids and non-hybrids based on user defined ancestry coefficient threshold.
 6. Runs supervised machine learning algorithms on labeled samples to identify signal SNPs that are highly associated with each species and hybrids, emiting various reports of models performance and information about important SNPs.
 7. Additionally, if a fasta genome file and a GFF/GTF file of the reference genome used to assemble the reads/VCF is provided it can annotate the important SNPs using VEP. ([`VEP`](https://www.ensembl.org/info/docs/tools/vep/index.html))
+
+## Pipeline summary
+# ![lfreitasl/hybrider](docs/images/hybrider_metro.png)
 
 ## Usage
 

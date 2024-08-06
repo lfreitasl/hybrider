@@ -13,6 +13,7 @@ workflow FILT_CONVERTER {
     indmiss
     maf
     usepopinfo
+    skip_filtering
 
     main:
     ch_str      = Channel.empty()
@@ -26,7 +27,7 @@ workflow FILT_CONVERTER {
     ch_fam      = Channel.empty()
     ch_admx     = Channel.empty()
 
-    FILTER_VCF(vcf,meta,locmiss,indmiss,maf,usepopinfo)
+    FILTER_VCF(vcf,meta,locmiss,indmiss,maf,usepopinfo,skip_filtering)
 
     ch_str      = ch_str.mix(FILTER_VCF.out.str.ifEmpty([]))
     ch_vcf      = ch_vcf.mix(FILTER_VCF.out.vcf.ifEmpty([]))

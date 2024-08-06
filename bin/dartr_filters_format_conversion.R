@@ -13,6 +13,7 @@ ind_filt_thresh<-as.numeric(args[4])  #filt inds based on missing threshold
 maf<-as.numeric(args[5])  #filt loci based on minor allele frequency
 pref<-args[6] #prefix for naming the outputs
 usepopinfo<-as.logical(args[7]) #whether or not use population information if present on samplesheet
+skip<-as.logical(args[8]) #wheter skip filtering phase and go straight to format conversion
 
 myg<-read.vcfR(vcfp)
 myg<-myg[is.biallelic(myg),]
@@ -25,6 +26,7 @@ meta<-read.csv(meta)
 meta<-meta[meta$samples%in%myg$ind.names,]
 meta<-meta[match(myg$ind.names, meta$samples),]
 
+if(!skip){
 # Adding filters
 myg<-gl.filter.allna(myg)
 myg<-gl.filter.monomorphs(myg)
@@ -42,11 +44,15 @@ myg_p<-gl.filter.allna(myg_p, by.pop = T)
 myg_p<-gl.filter.monomorphs(myg_p)
 myg_p<-gl.filter.callrate(myg_p, threshold = loci_filt_thresh)
 myg_p<-gl.filter.callrate(myg_p, method = "ind", threshold = ind_filt_thresh)
-myg_p<-gl.filter.maf(myg_p,threshold = maf,by.pop = T, ind.limit = 4)
+myg_p<-gl.filter.maf(myg_p,threshold = maf,by.pop = T, ind.limit = 5)
+ld   <-gl.report.ld.map(myg_p, ld_max_pairwise = 20000, ind.limit = 5)
+myg_p<-gl.filter.ld(myg_p,ld_report = ld, pop.limit=2)
 
 #for treemix
 gl2treemix(myg_p, outfile = paste(pref, ".treemix.gz", sep = ""), outpath = "./")
 
+myg<-myg_p
+}
 }
 # Adding filter to remove some populations if needed:
 #myg_p<-gl.drop.pop(myg_p, c("-","Cativeiro","Japi","Uruçui")) #substitute concatenated per samples

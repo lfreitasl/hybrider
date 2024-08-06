@@ -65,6 +65,7 @@ workflow HYBRIDER {
         params.indmiss,
         params.maf,
         params.popinfo,
+        params.skip_filtering
     )
 
     ch_str_in   = ch_str_in.mix(FILT_CONVERTER.out.str_meta)

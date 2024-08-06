@@ -15,6 +15,7 @@ process FILTER_VCF {
     val indmiss
     val maf
     val usepopinfo
+    val skip
 
     output:
     path '*.str'                                                , emit: str
@@ -43,6 +44,7 @@ process FILTER_VCF {
         $maf \\
         $prefix \\
         $usepopinfo \\
+        $skip \\
         $args
 
     cat <<-END_VERSIONS > versions.yml

@@ -28,12 +28,13 @@ meta<-meta[match(myg$ind.names, meta$samples),]
 
 if(!skip){
 # Adding filters
+if(!usepopinfo){
 myg<-gl.filter.allna(myg)
 myg<-gl.filter.monomorphs(myg)
 myg<-gl.filter.callrate(myg, threshold = loci_filt_thresh)
 myg<-gl.filter.callrate(myg, method = "ind", threshold = ind_filt_thresh)
 myg<-gl.filter.maf(myg,threshold = maf)
-
+}
 #Adding pop information to a new gl object
 if(usepopinfo){
 myg_p<-myg
@@ -44,7 +45,7 @@ myg_p<-gl.filter.allna(myg_p, by.pop = T)
 myg_p<-gl.filter.monomorphs(myg_p)
 myg_p<-gl.filter.callrate(myg_p, threshold = loci_filt_thresh)
 myg_p<-gl.filter.callrate(myg_p, method = "ind", threshold = ind_filt_thresh)
-myg_p<-gl.filter.maf(myg_p,threshold = maf,by.pop = T, ind.limit = 5)
+myg_p<-gl.filter.maf(myg_p,threshold = maf,by.pop = T, ind.limit = 5, pop.limit=2)
 ld   <-gl.report.ld.map(myg_p, ld_max_pairwise = 20000, ind.limit = 5)
 myg_p<-gl.filter.ld(myg_p,ld_report = ld, pop.limit=2)
 

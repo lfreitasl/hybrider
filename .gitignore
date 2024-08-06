@@ -9,3 +9,4 @@ testing*
 falvlib_filt_20depth_gi.recode.vcf
 singularity_images/
 test/
+popinfo/

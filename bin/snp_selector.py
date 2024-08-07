@@ -524,7 +524,7 @@ def snp_selector (meta, gen, snp_info, k, p, r, n):
 # %%
 #Main function
 def main():
-    parser = argparse.ArgumentParser(description='RNAmining: a deep learning stand-alone and web server tool for sequences coding prediction and RNA functional assignation')
+    parser = argparse.ArgumentParser(description='SNPselector, a tool for identify signal SNPs for species identification based on machine learning algorithms')
     parser.add_argument('-g','--genotype', help='The filename with the genotype file', required=True)
     parser.add_argument('-m','--metadata', help='The file with metadata information.', required=True)
     parser.add_argument('-i','--snp_info', help='File with each SNP information (Chromossome, position and ID)', required=True)
